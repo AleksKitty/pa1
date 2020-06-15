@@ -12,7 +12,6 @@
 extern int number_of_processes; // from input
 
 
-
 typedef struct {
     pid_t pid; // special id for processes
     local_id localId; // id from ipc.h
