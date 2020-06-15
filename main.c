@@ -25,7 +25,7 @@ typedef struct {
 static void create_pipes(process *array_of_processes, int *fd) {
     printf("Creating pipes!\n");
 
-    FILE *pipe_log = fopen("pipes", "w"); // for writing into file
+    FILE *pipe_log = fopen("pipes", "a"); // for writing into file
     for (int i = 0; i < number_of_processes; i++) {
         for (int j = 0; j < number_of_processes; j++) { // making pipes for everyone to everyone
             // try to create new pipe
@@ -45,19 +45,42 @@ static void create_pipes(process *array_of_processes, int *fd) {
 
             printf("Pipe (read %d, write %d) has OPENED\n", fd[0], fd[1]);
             fprintf(pipe_log, "Pipe (read %d, write %d) has OPENED\n", fd[0], fd[1]);
-            //fflush(pipe_log);
+            fflush(pipe_log);
         }
 
     }
     fclose(pipe_log);
 }
 
+static void close_unnecessary_pipes(process array_of_processes[], local_id id) {
+
+    printf("id = %d\n", id);
+    for (int i = 0; i < number_of_processes; i++) {
+        for (int j = 0; j < number_of_processes; j++) {
+            if (i != id && i != j) {
+
+                printf("i = %d, j = %d\n", i, j);
+                close(array_of_processes[i].pipe_write[j]); // i can't write into j
+                printf("%d can't write into %d; pipe_write[%d] = %d\n", i, j, j, array_of_processes[i].pipe_write[j]);
+
+
+
+                    close(array_of_processes[i].pipe_read[j]); // i can't read from j;
+                    printf("%d can't read from %d; pipe_read[%d] = %d\n", i, j, j, array_of_processes[i].pipe_read[j]);
+
+
+            }
+        }
+    }
+}
+
+
 static void close_all_pipes(process array_of_processes[]) {
     for (int i = 0; i < number_of_processes; i++) {
         for (int j = 0; j < number_of_processes; j++) {
             if (i != j) {
-                close(array_of_processes[j].pipe_read[j]);
-                close(array_of_processes[i].pipe_write[j]);
+                close(array_of_processes[j].pipe_read[i]); // j read from i
+                close(array_of_processes[i].pipe_write[j]); // i write into j
             }
         }
     }
@@ -65,7 +88,7 @@ static void close_all_pipes(process array_of_processes[]) {
 
 
 static void create_processes(process *array_of_processes) {
-    FILE *event_log = fopen(events_log, "w"); // for writing into file
+    FILE *event_log = fopen(events_log, "a"); // for writing into file
     printf("Creating processes:\n");
 
     for (int i = 1; i < number_of_processes; i++) {
@@ -80,9 +103,9 @@ static void create_processes(process *array_of_processes) {
         } else if (result_of_fork == 0) { // we are in child
             array_of_processes[i].pid = getpid(); // give pid
             printf("[son] pid %d from [parent] pid %d\n", getpid(), getppid());
-            // print
-            fprintf(event_log, log_started_fmt, i, getpid(), getppid());
-            fflush(event_log);
+
+
+            close_unnecessary_pipes(array_of_processes, array_of_processes[i].localId); // struct is duplicated, we need to close unnecessary pipes!
 
 
             Message message = {.s_header = {.s_type = STARTED, .s_magic = MESSAGE_MAGIC},}; // our message, set s_header of Message; set s_type and s_magic of Header
@@ -90,6 +113,11 @@ static void create_processes(process *array_of_processes) {
             message.s_header.s_payload_len = (uint16_t) strlen(message.s_payload); // set s_payload_len of Header
 
             send_multicast(&array_of_processes[i], &message);
+
+            // print
+            fprintf(event_log, log_started_fmt, i, getpid(), getppid());
+            fflush(event_log);
+
             receive_any(&array_of_processes[i], &message);
 
             // print
@@ -98,42 +126,42 @@ static void create_processes(process *array_of_processes) {
             fflush(event_log);
 
 
-
             // send and receive DONE
             message.s_header.s_type = DONE;
             sprintf(message.s_payload, log_done_fmt, array_of_processes[i].localId); // data of our message in a buffer, set s_payload of Message
             message.s_header.s_payload_len = (uint16_t) strlen(message.s_payload); // set s_payload_len of Header
             send_multicast(&array_of_processes[i], &message);
 
-            if (i == number_of_processes - 1) {
-                printf(log_received_all_started_fmt, 0);
-                fprintf(event_log, log_received_all_started_fmt, 0);
-                fflush(event_log);
-            }
-
             // print
             fprintf(event_log, log_done_fmt, i);
             fflush(event_log);
 
             receive_any(&array_of_processes[i], &message);
-            receive_any(&array_of_processes[0], &message); // receive for PARENT
-
 
             // print
             printf(log_received_all_done_fmt, i);
             fprintf(event_log, log_received_all_done_fmt, i);
             fflush(event_log);
-            if (i == number_of_processes - 1) {
-                printf(log_received_all_done_fmt, 0);
-                fprintf(event_log, log_received_all_started_fmt, 0);
-                fflush(event_log);
-            }
-
 
             fclose(event_log);
             exit(0);
         }
     }
+
+    Message message;
+    receive_any(&array_of_processes[0], &message); // receive for PARENT
+
+    // print
+    printf(log_received_all_started_fmt, 0);
+    fprintf(event_log, log_received_all_started_fmt, 0);
+    fflush(event_log);
+
+    receive_any(&array_of_processes[0], &message); // receive for PARENT
+
+    printf(log_received_all_done_fmt, 0);
+    fprintf(event_log, log_received_all_started_fmt, 0);
+    fflush(event_log);
+
 }
 
 int main(int argc, char *argv[]) {

@@ -116,10 +116,10 @@ int receive(void * self, local_id from, Message * msg) {
  */
 int receive_any(void * self, Message * msg) {
     process *process = self;
-    int index_start = 1;
-    if (process->localId == 0) { // it's parent   // you didnt send from 0 process!!!
-        index_start = 0;
-    }
+    int index_start = 1; // don't know if it is ok
+//    if (process->localId == 0) { // it's parent   // you didn't send from 0 process!!!
+//        index_start = 1;
+//    }
 
     for (int index_pipe_read = index_start; index_pipe_read < number_of_processes; index_pipe_read++) {
         if (index_pipe_read != process->localId) {
