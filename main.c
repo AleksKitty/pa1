@@ -12,7 +12,6 @@
 extern int number_of_processes; // from input
 
 
-
 typedef struct {
     pid_t pid; // special id for processes
     local_id localId; // id from ipc.h
@@ -63,12 +62,8 @@ static void close_unnecessary_pipes(process array_of_processes[], local_id id) {
                 close(array_of_processes[i].pipe_write[j]); // i can't write into j
                 printf("%d can't write into %d; pipe_write[%d] = %d\n", i, j, j, array_of_processes[i].pipe_write[j]);
 
-
-
-                    close(array_of_processes[i].pipe_read[j]); // i can't read from j;
-                    printf("%d can't read from %d; pipe_read[%d] = %d\n", i, j, j, array_of_processes[i].pipe_read[j]);
-
-
+                close(array_of_processes[i].pipe_read[j]); // i can't read from j;
+                printf("%d can't read from %d; pipe_read[%d] = %d\n", i, j, j, array_of_processes[i].pipe_read[j]);
             }
         }
     }
