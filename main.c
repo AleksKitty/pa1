@@ -63,12 +63,8 @@ static void close_unnecessary_pipes(process array_of_processes[], local_id id) {
                 close(array_of_processes[i].pipe_write[j]); // i can't write into j
                 printf("%d can't write into %d; pipe_write[%d] = %d\n", i, j, j, array_of_processes[i].pipe_write[j]);
 
-
-
-                    close(array_of_processes[i].pipe_read[j]); // i can't read from j;
-                    printf("%d can't read from %d; pipe_read[%d] = %d\n", i, j, j, array_of_processes[i].pipe_read[j]);
-
-
+                close(array_of_processes[i].pipe_read[j]); // i can't read from j;
+                printf("%d can't read from %d; pipe_read[%d] = %d\n", i, j, j, array_of_processes[i].pipe_read[j]);
             }
         }
     }
@@ -79,8 +75,13 @@ static void close_all_pipes(process array_of_processes[]) {
     for (int i = 0; i < number_of_processes; i++) {
         for (int j = 0; j < number_of_processes; j++) {
             if (i != j) {
-                close(array_of_processes[j].pipe_read[i]); // j read from i
-                close(array_of_processes[i].pipe_write[j]); // i write into j
+                if (array_of_processes[j].pipe_read[i] > 0) {
+                    close(array_of_processes[j].pipe_read[i]); // j read from i
+                }
+
+                if (array_of_processes[i].pipe_read[j] > 0) {
+                    close(array_of_processes[i].pipe_read[j]); // j read from i
+                }
             }
         }
     }
