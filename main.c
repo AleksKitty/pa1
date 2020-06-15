@@ -148,6 +148,8 @@ static void create_processes(process *array_of_processes) {
         }
     }
 
+    close_unnecessary_pipes(array_of_processes, 0);
+
     Message message;
     receive_any(&array_of_processes[0], &message); // receive for PARENT
 
