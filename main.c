@@ -21,7 +21,7 @@ typedef struct {
 
 
 
-static void create_pipes(process *array_of_processes, int *fd) {
+static void create_pipes(process *array_of_processes) {
     printf("Creating pipes!\n");
 
     FILE *pipe_log = fopen("pipes", "a"); // for writing into file
@@ -30,21 +30,24 @@ static void create_pipes(process *array_of_processes, int *fd) {
             // try to create new pipe
 
             if (i != j) {
+                // for standard pipe
+                int fd[2];
+
                 if (pipe(fd) < 0) { // fail
                     printf("Can't create new pipe\n");
                     exit(-1);
                 }
+
                 array_of_processes[j].pipe_read[i] = fd[0]; // j read from i
                 array_of_processes[i].pipe_write[j] = fd[1]; // i write into j
+
+                printf("Pipe (read %d, write %d) has OPENED\n", fd[0], fd[1]);
+                fprintf(pipe_log, "Pipe (read %d, write %d) has OPENED\n", fd[0], fd[1]);
+                fflush(pipe_log);
             } else {
                 array_of_processes[j].pipe_read[i] = -1; // can't read from itself
                 array_of_processes[i].pipe_write[j] = -1; // can't write into itself
-                continue;
             }
-
-            printf("Pipe (read %d, write %d) has OPENED\n", fd[0], fd[1]);
-            fprintf(pipe_log, "Pipe (read %d, write %d) has OPENED\n", fd[0], fd[1]);
-            fflush(pipe_log);
         }
 
     }
@@ -110,7 +113,7 @@ static void create_processes(process *array_of_processes) {
 
             Message message = {.s_header = {.s_type = STARTED, .s_magic = MESSAGE_MAGIC},}; // our message, set s_header of Message; set s_type and s_magic of Header
             sprintf(message.s_payload, log_started_fmt, array_of_processes[i].localId, array_of_processes[i].pid, getppid()); // data of our message in a buffer, set s_payload of Message
-            message.s_header.s_payload_len = (uint16_t) strlen(message.s_payload); // set s_payload_len of Header
+            message.s_header.s_payload_len = (uint16_t) strlen(message.s_payload) + 1; // set s_payload_len of Header
 
             send_multicast(&array_of_processes[i], &message);
 
@@ -129,7 +132,7 @@ static void create_processes(process *array_of_processes) {
             // send and receive DONE
             message.s_header.s_type = DONE;
             sprintf(message.s_payload, log_done_fmt, array_of_processes[i].localId); // data of our message in a buffer, set s_payload of Message
-            message.s_header.s_payload_len = (uint16_t) strlen(message.s_payload); // set s_payload_len of Header
+            message.s_header.s_payload_len = (uint16_t) strlen(message.s_payload) + 1; // set s_payload_len of Header
             send_multicast(&array_of_processes[i], &message);
 
             // print
@@ -182,15 +185,14 @@ int main(int argc, char *argv[]) {
 
     process array_of_processes[++number_of_processes]; // put in an array, 0 process is a main parent process
 
-    int fd[2]; // for standard pipe
-
     for (int i = 0; i < number_of_processes; i++) { // initialize our arrays
         array_of_processes[i].pipe_read = (int *) malloc(sizeof(int) * number_of_processes);
         array_of_processes[i].pipe_write = (int *) malloc(sizeof(int) * number_of_processes);
     }
 
     printf("Number of processes = %d\n", number_of_processes);
-    create_pipes(array_of_processes, fd); // our function for creating all pipes
+
+    create_pipes(array_of_processes); // our function for creating all pipes
 
     array_of_processes[0].localId = PARENT_ID; // for parent process
     array_of_processes[0].pid = getpid(); // for parent process, get pid for current process
