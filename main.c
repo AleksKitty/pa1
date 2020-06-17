@@ -8,6 +8,7 @@
 #include "ipc.h"
 #include "common.h"
 #include "pa1.h"
+#include "banking.h"
 
 extern int number_of_processes; // from input
 
@@ -17,6 +18,7 @@ typedef struct {
     local_id localId; // id from ipc.h
     int *pipe_read; // who we need to READ from
     int *pipe_write; // who we need to WRITE into
+    balance_t balance; // amount of money of our process (Parent doesn't have money (balance = 0))
 }  process;
 
 
@@ -56,17 +58,17 @@ static void create_pipes(process *array_of_processes) {
 
 static void close_unnecessary_pipes(process array_of_processes[], local_id id) {
 
-    printf("id = %d\n", id);
+    //printf("id = %d\n", id);
     for (int i = 0; i < number_of_processes; i++) {
         for (int j = 0; j < number_of_processes; j++) {
             if (i != id && i != j) {
 
-                printf("i = %d, j = %d\n", i, j);
+                //printf("i = %d, j = %d\n", i, j);
                 close(array_of_processes[i].pipe_write[j]); // i can't write into j
-                printf("%d can't write into %d; pipe_write[%d] = %d\n", i, j, j, array_of_processes[i].pipe_write[j]);
+                //printf("%d can't write into %d; pipe_write[%d] = %d\n", i, j, j, array_of_processes[i].pipe_write[j]);
 
                 close(array_of_processes[i].pipe_read[j]); // i can't read from j;
-                printf("%d can't read from %d; pipe_read[%d] = %d\n", i, j, j, array_of_processes[i].pipe_read[j]);
+                //printf("%d can't read from %d; pipe_read[%d] = %d\n", i, j, j, array_of_processes[i].pipe_read[j]);
             }
         }
     }
@@ -171,10 +173,18 @@ static void create_processes(process *array_of_processes) {
 
 int main(int argc, char *argv[]) {
 
-    if (argc == 3 && strcmp("-p", argv[1]) == 0) { // reading input parameters
+    int right_arguments = -1;
+    int* balance;
+    if (argc >= 4 && strcmp("-p", argv[1]) == 0) { // reading input parameters
         number_of_processes = atoi(argv[2]);
-    } else {
+
+        if (argc == number_of_processes + 3) {
+            right_arguments = 0;
+        }
+    }
+    if (right_arguments != 0) {
         printf("Wrong arguments!\n");
+        printf("argc = %d\n", argc);
         exit(-1);
     }
 
@@ -183,11 +193,27 @@ int main(int argc, char *argv[]) {
         exit(-1);
     }
 
-    process array_of_processes[++number_of_processes]; // put in an array, 0 process is a main parent process
+    number_of_processes++; // remember about Parent!
 
-    for (int i = 0; i < number_of_processes; i++) { // initialize our arrays
-        array_of_processes[i].pipe_read = (int *) malloc(sizeof(int) * number_of_processes);
-        array_of_processes[i].pipe_write = (int *) malloc(sizeof(int) * number_of_processes);
+    balance = (int *) malloc(sizeof(int) * (number_of_processes)); // give memory to our array
+    balance[0] = 0; // balance for Parent
+
+    for (int i = 3; i < number_of_processes + 2; i++) { // check amount of money
+        if (atoi(argv[i]) < 1 || atoi(argv[i]) > 99) {
+            printf("Wrong amount of money!\n");
+            exit(-1);
+        }
+        balance[i - 2] = atoi(argv[i]); // put from balance[1] etc
+    }
+
+    process array_of_processes[number_of_processes]; // put in an array, 0 process is a main parent process
+
+    for (int i = 0; i < number_of_processes; i++) {
+        array_of_processes[i].pipe_read = (int *) malloc(sizeof(int) * number_of_processes); // initialize our array
+        array_of_processes[i].pipe_write = (int *) malloc(sizeof(int) * number_of_processes); // initialize our array
+
+        array_of_processes[i].balance = balance[i];
+        printf("balance: %d\n", balance[i]);
     }
 
     printf("Number of processes = %d\n", number_of_processes);
