@@ -3,4 +3,4 @@ project(pa1 C)
 
 set(CMAKE_C_STANDARD 99)
 
-add_executable(pa1 main.c ipc.h common.h pa1.h ipc.c banking.h)
+add_executable(pa1 main.c ipc.h common.h pa1.h ipc.c banking.h pa23.c bank_robbery.c banking.c)
