@@ -180,7 +180,8 @@ static void create_processes(process *array_of_processes, const int *balances) {
             fflush(event_log);
 
             int in_cycle = 1;
-            while(in_cycle) {
+            while(in_cycle == 1) {
+
                 TransferOrder transferOrder;
 //            printf((const char *) message.s_header.s_type);
                 memset(message.s_payload, 0, message.s_header.s_payload_len);
