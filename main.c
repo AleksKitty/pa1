@@ -21,6 +21,22 @@ typedef struct {
     BalanceHistory balance_history; // struct for money and time of our process (Parent doesn't have money)
 }  process;
 
+static int receive_any_classic(void * self, Message * msg) {
+    process *process = self;
+
+    for (int index_pipe_read = 1; index_pipe_read < number_of_processes; index_pipe_read++) {
+        if (index_pipe_read != process->localId) {
+            int result = receive(self, index_pipe_read, msg);
+
+            if (result == -1) {
+                printf("Receive = -1\n");
+                return -1;
+            }
+        }
+    }
+
+    return 0;
+}
 
 
 static void create_pipes(process *array_of_processes) {
@@ -140,13 +156,13 @@ static void create_processes(process *array_of_processes, const int *balances) {
 
             array_of_processes[i].balance_history.s_history_len = 1; // size of array (amount of T)
             array_of_processes[i].balance_history.s_history[i].s_balance = 0; // start time
-            array_of_processes[i].balance_history.s_history[i].s_time = balances[i]; // put input money in structure
+            array_of_processes[i].balance_history.s_history[i].s_time = get_physical_time(); // put input money in structure
 
 
             close_unnecessary_pipes(array_of_processes, array_of_processes[i].localId); // struct is duplicated, we need to close unnecessary pipes!
 
 
-            Message message = {.s_header = {.s_type = STARTED, .s_magic = MESSAGE_MAGIC},}; // our message, set s_header of Message; set s_type and s_magic of Header
+            Message message = {.s_header = {.s_type = STARTED, .s_local_time = get_physical_time(), .s_magic = MESSAGE_MAGIC},}; // our message, set s_header of Message; set s_type and s_magic of Header
             sprintf(message.s_payload, log_started_fmt, array_of_processes[i].localId, array_of_processes[i].pid, getppid()); // data of our message in a buffer, set s_payload of Message
             message.s_header.s_payload_len = (uint16_t) strlen(message.s_payload) + 1; // set s_payload_len of Header
 
@@ -163,16 +179,23 @@ static void create_processes(process *array_of_processes, const int *balances) {
             fprintf(event_log, log_received_all_started_fmt, i);
             fflush(event_log);
 
-            TransferOrder transferOrder;
+            int in_cycle = 1;
+            while(in_cycle) {
+                TransferOrder transferOrder;
 //            printf((const char *) message.s_header.s_type);
-            receive_any(&array_of_processes[i], &message); // receive TRANSFER from Parent
+                Message tr_message;
+                memset(tr_message.s_payload, 0, tr_message.s_header.s_payload_len);
+                receive_any(&array_of_processes[i], &tr_message); // receive TRANSFER from Parent
+                printf("Message type = TRANSFER\n");
 
-            printf("\n");
+                printf("\n");
 
-            if (message.s_header.s_type == TRANSFER) {
-                memcpy(&transferOrder, message.s_payload, message.s_header.s_payload_len); // get transferOrder from message buffer (memcpy = copy)
-                change_balances(array_of_processes[i], &transferOrder, &message);
-            }
+                if (tr_message.s_header.s_type == TRANSFER) {
+                    printf("Message type = TRANSFER\n");
+                    memcpy(&transferOrder, tr_message.s_payload,
+                           tr_message.s_header.s_payload_len); // get transferOrder from message buffer (memcpy = copy)
+                    change_balances(array_of_processes[i], &transferOrder, &tr_message);
+                }
 
 
 //            // send and receive DONE
@@ -192,6 +215,9 @@ static void create_processes(process *array_of_processes, const int *balances) {
 //            fprintf(event_log, log_received_all_done_fmt, i);
 //            fflush(event_log);
 
+                in_cycle = -1;
+
+            }
 
             fclose(event_log);
             exit(0);
@@ -199,7 +225,7 @@ static void create_processes(process *array_of_processes, const int *balances) {
     }
 
     Message message;
-    receive_any(&array_of_processes[0], &message); // receive STARTED for PARENT
+    receive_any_classic(&array_of_processes[0], &message); // receive STARTED for PARENT
 
     // print
     printf(log_received_all_started_fmt, 0);

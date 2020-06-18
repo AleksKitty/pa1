@@ -38,7 +38,9 @@ int send(void *self, local_id dst, const Message *msg) {
         return -1;
     }
 
-    printf("Sending : process %d sent to process %d message: %s\n", sender->localId, dst, msg->s_payload);
+    if (msg->s_header.s_type != STARTED) {
+        printf("Sending : process %d sent to process %d message: %s\n", sender->localId, dst, msg->s_payload);
+    }
 
     return 0;
 }
@@ -136,6 +138,7 @@ int receive_any(void * self, Message * msg) {
             }
         }
     }
-
 }
+
+
 
