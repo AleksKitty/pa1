@@ -38,7 +38,7 @@ int send(void *self, local_id dst, const Message *msg) {
         return -1;
     }
 
-//    printf("Sending : process %d sent to process %d message: %s\n", sender->localId, dst, msg->s_payload);
+    printf("Sending : process %d sent to process %d message: %s\n", sender->localId, dst, msg->s_payload);
 
     return 0;
 }
@@ -84,22 +84,21 @@ int send_multicast(void * self, const Message * msg) {
 int receive(void * self, local_id from, Message * msg) {
     process * receiver = self;
 
-
     int fd = receiver->pipe_read[from]; // where exactly we are sending!
 
-    if ((read(fd, &msg->s_header, sizeof(MessageHeader))) == -1) {
-        printf("Error!\n");
-        return -1;
+    while(1) {
+        if ((read(fd, &msg->s_header, sizeof(MessageHeader))) > 0) {
+            while(1) {
+                if ((read(fd, &msg->s_payload, msg->s_header.s_payload_len)) >= 0) {
+
+                    printf("Receiving : Process %d received from process %d message : %s\n", receiver->localId, from, (char *) &msg->s_payload);
+                    return 0;
+                }
+            }
+        } else {
+            //usleep(1000);
+        }
     }
-
-    if ((read(fd, &msg->s_payload, msg->s_header.s_payload_len)) == -1) {
-        printf("Error!\n");
-        return -1;
-    }
-
-    printf("Receiving : Process %d received from process %d message : %s\n", receiver->localId, from, (char *) &msg->s_payload);
-
-    return 0;
 }
 
 //------------------------------------------------------------------------------
@@ -116,22 +115,27 @@ int receive(void * self, local_id from, Message * msg) {
  */
 int receive_any(void * self, Message * msg) {
     process *process = self;
-    int index_start = 1; // don't know if it is ok
-//    if (process->localId == 0) { // it's parent   // you didn't send from 0 process!!!
-//        index_start = 1;
-//    }
+    printf("Receive any:");
+    printf("\n");
 
-    for (int index_pipe_read = index_start; index_pipe_read < number_of_processes; index_pipe_read++) {
-        if (index_pipe_read != process->localId) {
-            int result = receive(self, index_pipe_read, msg);
+    while (1) {
+        for (int index_pipe_read = 0; index_pipe_read < number_of_processes; index_pipe_read++) {
+            if (index_pipe_read != process->localId) {
+                if ((read(process->pipe_read[index_pipe_read], &msg->s_header, sizeof(MessageHeader))) > 0) {
 
-            if (result == -1) {
-                printf("Receive = -1\n");
-                return -1;
+                    if ((read(process->pipe_read[index_pipe_read], &msg->s_payload, msg->s_header.s_payload_len)) >= 0) {
+
+                        printf("Receiving : Process %d received from process %d message : %s\n", process->localId, index_pipe_read, (char *) &msg->s_payload);
+                        return 0;
+                    }
+
+                } else {
+                    //usleep(1000);
+                }
+
             }
         }
     }
 
-    return 0;
 }
 
