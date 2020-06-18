@@ -172,7 +172,7 @@ static void create_processes(process *array_of_processes, const int *balances) {
             fprintf(event_log, log_started_fmt, i, getpid(), getppid());
             fflush(event_log);
 
-            receive_any(&array_of_processes[i], &message); // receive STARTED
+            receive_any_classic(&array_of_processes[i], &message); // receive STARTED
 
             // print
             printf(log_received_all_started_fmt, i);
@@ -183,18 +183,16 @@ static void create_processes(process *array_of_processes, const int *balances) {
             while(in_cycle) {
                 TransferOrder transferOrder;
 //            printf((const char *) message.s_header.s_type);
-                Message tr_message;
-                memset(tr_message.s_payload, 0, tr_message.s_header.s_payload_len);
-                receive_any(&array_of_processes[i], &tr_message); // receive TRANSFER from Parent
-                printf("Message type = TRANSFER\n");
+                memset(message.s_payload, 0, message.s_header.s_payload_len);
+                receive_any(&array_of_processes[i], &message); // receive TRANSFER from Parent
 
                 printf("\n");
 
-                if (tr_message.s_header.s_type == TRANSFER) {
+                if (message.s_header.s_type == TRANSFER) {
                     printf("Message type = TRANSFER\n");
-                    memcpy(&transferOrder, tr_message.s_payload,
-                           tr_message.s_header.s_payload_len); // get transferOrder from message buffer (memcpy = copy)
-                    change_balances(array_of_processes[i], &transferOrder, &tr_message);
+                    memcpy(&transferOrder, message.s_payload,
+                           message.s_header.s_payload_len); // get transferOrder from message buffer (memcpy = copy)
+                    change_balances(array_of_processes[i], &transferOrder, &message);
                 }
 
 
