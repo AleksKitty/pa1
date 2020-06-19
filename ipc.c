@@ -97,12 +97,10 @@ int receive(void * self, local_id from, Message * msg) {
 
     while(1){
         int read_result;
-        if ((read_result = read(fd, &msg->s_header, sizeof(MessageHeader))) > 0) {
-            if (read_result == sizeof(MessageHeader)) {
-                printf("Size of read is right.\n");
-            } else {
-                printf("Wrong.\n");
-            }
+        read_result = read(fd, &msg->s_header, sizeof(MessageHeader));
+        printf("read_result = %d\n", read_result);
+
+        if (read_result > 0) {
 
             while(1) {
                 int result;
@@ -110,7 +108,7 @@ int receive(void * self, local_id from, Message * msg) {
 
                     if (msg->s_header.s_type == TRANSFER) {
                        printf("Receiving : Process %d received from process %d message : %s\n", receiver->localId, from, "\"TRANSFER\"");
-                    } else if (msg->s_header.s_type == STARTED){
+                    } else if (msg->s_header.s_type == STARTED) {
                         printf("Receiving : Process %d received from process %d message : %s\n", receiver->localId, from, (char *) &msg->s_payload);
                     } else if (msg->s_header.s_type == BALANCE_HISTORY) {
                         printf("Receiving : Process %d received from process %d message : %s\n", receiver->localId, from, "\"HISTORY\"");
