@@ -39,13 +39,13 @@ int send(void *self, local_id dst, const Message *msg) {
     }
 
     if (msg->s_header.s_type == TRANSFER) {
-       // printf("Sending : process %d sent to process %d message: %s\n", sender->localId, dst, "\"TRANSFER\"");
+        printf("Sending : process %d sent to process %d message: %s\n", sender->localId, dst, "\"TRANSFER\"");
     } else if (msg->s_header.s_type == ACK ) {
-       // printf("Sending : process %d sent to process %d message: %s\n", sender->localId, dst, (char *) msg->s_payload);
+        printf("Sending : process %d sent to process %d message: %s\n", sender->localId, dst, (char *) msg->s_payload);
     } else if (msg->s_header.s_type == STOP) {
         printf("Sending : process %d sent to process %d message: %s\n", sender->localId, dst, "\"STOP\"");
     } else if ( msg->s_header.s_type == DONE) {
-        //printf("Sending : process %d sent to process %d message: %s\n", sender->localId, dst, (char *) msg->s_payload);
+        printf("Sending : process %d sent to process %d message: %s\n", sender->localId, dst, (char *) msg->s_payload);
     } else if ( msg->s_header.s_type == BALANCE_HISTORY) {
         printf("Sending : process %d sent to process %d message: %s\n", sender->localId, dst, "\"HISTORY\"");
     }

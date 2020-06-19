@@ -242,7 +242,9 @@ static void create_processes(process *array_of_processes, FILE * event_log) {
 
             }
 
+            sleep(10);
             printf("process %d exit!\n", array_of_processes[i].localId);
+
 
             exit(0);
         }
