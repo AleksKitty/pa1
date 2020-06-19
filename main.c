@@ -162,8 +162,7 @@ static void change_balances(process* processik, TransferOrder transferOrder, Mes
 }
 
 
-static void create_processes(process *array_of_processes) {
-    FILE *event_log = fopen(events_log, "a"); // for writing into file
+static void create_processes(process *array_of_processes, FILE * event_log) {
     printf("Creating processes:\n");
 
     for (int i = 1; i < number_of_processes; i++) {
@@ -248,58 +247,6 @@ static void create_processes(process *array_of_processes) {
             exit(0);
         }
     }
-
-    Message message;
-    receive_from_all_children(&array_of_processes[0], &message); // receive STARTED for PARENT GOOD!
-
-    // print
-    printf(log_received_all_started_fmt, get_physical_time(), 0);
-    fprintf(event_log, log_received_all_started_fmt, get_physical_time(), 0);
-    fflush(event_log);
-
-    bank_robbery(&array_of_processes[0], number_of_processes - 1); // parent and number of children sending many TRANSFER
-
-    printf("Received ACK\n");
-
-    // send STOP
-    message.s_header.s_type = STOP;
-    message.s_header.s_local_time = get_physical_time();
-    message.s_header.s_payload_len = 0; // set s_payload_len of Header
-    send_multicast(&array_of_processes[0], &message);
-
-    receive_from_all_children(&array_of_processes[0], &message); // receive all DONE for PARENT
-
-    memset(message.s_payload, 0, message.s_header.s_payload_len); // give 0 to message
-
-
-
-    AllHistory allHistory;
-    allHistory.s_history_len = number_of_processes - 1; // number of children
-    for (int i = 1; i < number_of_processes; i++) {
-//        printf("i = %d\n", i);
-        if (receive(&array_of_processes[0], i, &message) >= 0) { // receive HISTORY from all children
-
-            printf("Received i = %d!, type = %d\n", i, message.s_header.s_type);
-
-            if (message.s_header.s_type == BALANCE_HISTORY) {
-
-                memcpy(&allHistory.s_history[i - 1], message.s_payload, message.s_header.s_payload_len);
-
-                printf("len = %d\n", allHistory.s_history[i - 1].s_history[0].s_balance);
-
-                printf("len = %d\n", message.s_header.s_payload_len);
-            }
-
-        }
-    }
-
-    sleep(1);
-
-    printf("Received history!\n");
-
-    print_history(&allHistory);
-
-    fclose(event_log);
 }
 
 int main(int argc, char *argv[]) {
@@ -356,8 +303,63 @@ int main(int argc, char *argv[]) {
     array_of_processes[0].localId = PARENT_ID; // for parent process
     array_of_processes[0].pid = getpid(); // for parent process, get pid for current process
 
+    FILE *event_log = fopen(events_log, "a"); // for writing into file
 
-    create_processes(array_of_processes);
+
+    create_processes(array_of_processes, event_log);
+
+
+
+    Message message;
+    receive_from_all_children(&array_of_processes[0], &message); // receive STARTED for PARENT GOOD!
+
+    // print
+    printf(log_received_all_started_fmt, get_physical_time(), 0);
+    fprintf(event_log, log_received_all_started_fmt, get_physical_time(), 0);
+    fflush(event_log);
+
+    bank_robbery(&array_of_processes[0], number_of_processes - 1); // parent and number of children sending many TRANSFER
+
+    printf("Received ACK\n");
+
+    // send STOP
+    message.s_header.s_type = STOP;
+    message.s_header.s_local_time = get_physical_time();
+    message.s_header.s_payload_len = 0; // set s_payload_len of Header
+    send_multicast(&array_of_processes[0], &message);
+
+    receive_from_all_children(&array_of_processes[0], &message); // receive all DONE for PARENT
+
+    memset(message.s_payload, 0, message.s_header.s_payload_len); // give 0 to message
+
+
+    AllHistory allHistory;
+    allHistory.s_history_len = number_of_processes - 1; // number of children
+    for (int i = 1; i < number_of_processes; i++) {
+//        printf("i = %d\n", i);
+        if (receive(&array_of_processes[0], i, &message) >= 0) { // receive HISTORY from all children
+
+            printf("Received i = %d!, type = %d\n", i, message.s_header.s_type);
+
+            if (message.s_header.s_type == BALANCE_HISTORY) {
+
+                memcpy(&allHistory.s_history[i - 1], message.s_payload, message.s_header.s_payload_len);
+
+                printf("len = %d\n", allHistory.s_history[i - 1].s_history[0].s_balance);
+
+                printf("len = %d\n", message.s_header.s_payload_len);
+            }
+
+        }
+    }
+
+    sleep(1);
+
+    printf("Received history!\n");
+
+    print_history(&allHistory);
+
+    fclose(event_log);
 
 
     for (local_id j = 1; j < number_of_processes; ++j) {
