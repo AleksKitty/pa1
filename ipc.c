@@ -46,6 +46,8 @@ int send(void *self, local_id dst, const Message *msg) {
         printf("Sending : process %d sent to process %d message: %s\n", sender->localId, dst, "\"STOP\"");
     } else if ( msg->s_header.s_type == DONE) {
         //printf("Sending : process %d sent to process %d message: %s\n", sender->localId, dst, (char *) msg->s_payload);
+    } else if ( msg->s_header.s_type == BALANCE_HISTORY) {
+        printf("Sending : process %d sent to process %d message: %s\n", sender->localId, dst, "\"HISTORY\"");
     }
     return 0;
 }
@@ -102,6 +104,8 @@ int receive(void * self, local_id from, Message * msg) {
                         printf("Receiving : Process %d received from process %d message : %s\n", receiver->localId, from, "\"TRANSFER\"");
                     } else if (msg->s_header.s_type == STARTED){
                         //printf("Receiving : Process %d received from process %d message : %s\n", receiver->localId, from, (char *) &msg->s_payload);
+                    } else if (msg->s_header.s_type == BALANCE_HISTORY) {
+                        printf("Receiving : Process %d received from process %d message : %s\n", receiver->localId, from, "\"HISTORY\"");
                     } else {
                         printf("Receiving : Process %d received from process %d message : %s\n", receiver->localId, from, (char *) &msg->s_payload);
                     }
@@ -146,6 +150,9 @@ int receive_any(void * self, Message * msg) {
                         //printf("Receiving : Process %d received from process %d message : %s\n", process->localId, index_pipe_read, (char *) &msg->s_payload);
                     } else if (msg->s_header.s_type == DONE) {
                         printf("Receiving : Process %d received from process %d message : %s\n", process->localId, index_pipe_read, (char *) &msg->s_payload);
+                    }
+                    else if (msg->s_header.s_type == BALANCE_HISTORY) {
+                        printf("Receiving : Process %d received from process %d message : %s\n", process->localId, index_pipe_read, "\"HISTORY\"");
                     }
                     return 0;
                 }
