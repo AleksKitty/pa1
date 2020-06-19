@@ -98,7 +98,8 @@ int receive(void * self, local_id from, Message * msg) {
     while(1) {
         if (read(fd, &msg->s_header, sizeof(MessageHeader)) > 0) {
             while(1) {
-                if (read(fd, &msg->s_payload, msg->s_header.s_payload_len) >= 0) {
+                int result;
+                if ((result = read(fd, &msg->s_payload, msg->s_header.s_payload_len)) >= 0) {
 
                     if (msg->s_header.s_type == TRANSFER) {
                        printf("Receiving : Process %d received from process %d message : %s\n", receiver->localId, from, "\"TRANSFER\"");
@@ -109,7 +110,9 @@ int receive(void * self, local_id from, Message * msg) {
                     } else if (msg->s_header.s_type == DONE){
                        printf("Receiving : Process %d received from process %d message : %s\n", receiver->localId, from, (char *) &msg->s_payload);
                     }
-                    return 0;
+
+                    printf("result of receive = %d\n", result);
+                    return result;
                 }
             }
         } else {
