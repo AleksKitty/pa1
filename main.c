@@ -75,7 +75,7 @@ static void create_pipes(process *array_of_processes) {
                     exit(-1);
                 }
 
-                fcntl(fd[0], F_SETFL, fcntl(fd[1], F_GETFL) | O_NONBLOCK); // make pipes not blocking!!!
+                fcntl(fd[0], F_SETFL, fcntl(fd[0], F_GETFL) | O_NONBLOCK); // make pipes not blocking!!!
                 fcntl(fd[1], F_SETFL, fcntl(fd[1], F_GETFL) | O_NONBLOCK); // make pipes not blocking!!!
 
                 array_of_processes[j].pipe_read[i] = fd[0]; // j read from i
