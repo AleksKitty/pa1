@@ -22,31 +22,31 @@ typedef struct {
     BalanceHistory balance_history; // struct for money and time of our process (Parent doesn't have money)
 }  process;
 
-static int receive_classic(void * self, local_id from, Message * msg) {
-    process * receiver = self;
-
-
-    int fd = receiver->pipe_read[from]; // where exactly we are sending!
-
-    if (read(fd, &msg->s_header, sizeof(MessageHeader)) > 0) {
-
-        if (read(fd, &msg->s_payload, msg->s_header.s_payload_len) >= 0) {
-
-           // printf("Receiving : Process %d received from process %d message : %s\n", receiver->localId, from, (char *) &msg->s_payload);
-
-            return 0;
-        }
-    }
-
-    return -1;
-}
+//static int receive_classic(void * self, local_id from, Message * msg) {
+//    process * receiver = self;
+//
+//
+//    int fd = receiver->pipe_read[from]; // where exactly we are sending!
+//
+//    if (read(fd, &msg->s_header, sizeof(MessageHeader)) > 0) {
+//
+//        if (read(fd, &msg->s_payload, msg->s_header.s_payload_len) >= 0) {
+//
+//           // printf("Receiving : Process %d received from process %d message : %s\n", receiver->localId, from, (char *) &msg->s_payload);
+//
+//            return 0;
+//        }
+//    }
+//
+//    return -1;
+//}
 
 static int receive_any_classic(void * self, Message * msg) {
     process *process = self;
 
     for (int index_pipe_read = 1; index_pipe_read < number_of_processes; index_pipe_read++) {
         if (index_pipe_read != process->localId) {
-            int result = receive_classic(self, index_pipe_read, msg);
+            int result = receive(self, index_pipe_read, msg);
 
             if (result == -1) {
                 return -1;
@@ -300,7 +300,7 @@ static void create_processes(process *array_of_processes) {
 
     AllHistory allHistory;
     allHistory.s_history_len = number_of_processes - 1; // number of children
-    for (int i = 1; i < number_of_processes; i++) {
+    for (int i = 1; i < 2; i++) {
 //        printf("i = %d\n", i);
         if (receive(&array_of_processes[0], i, &message) >= 0) { // receive HISTORY from all children
 

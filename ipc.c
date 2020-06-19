@@ -118,6 +118,8 @@ int receive(void * self, local_id from, Message * msg) {
 
                     printf("result of receive = %d\n", result);
                     return result;
+                } else {
+                    sleep(1);
                 }
             }
         } else {
