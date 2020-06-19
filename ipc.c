@@ -95,9 +95,10 @@ int receive(void * self, local_id from, Message * msg) {
 
     int fd = receiver->pipe_read[from]; // where exactly we are sending!
 
-    while(1) {
-        if (read(fd, &msg->s_header, sizeof(MessageHeader)) > 0) {
-            if (read(fd, &msg->s_header, sizeof(MessageHeader)) == sizeof(MessageHeader)) {
+    while(1){
+        int read_result;
+        if ((read_result = read(fd, &msg->s_header, sizeof(MessageHeader))) > 0) {
+            if (read_result == sizeof(MessageHeader)) {
                 printf("Size of read is right.\n");
             } else {
                 printf("Wrong.\n");
