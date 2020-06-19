@@ -12,7 +12,7 @@
 #include "banking.h"
 
 extern int number_of_processes; // from input
-
+//int processID;
 
 typedef struct {
     pid_t pid; // special id for processes
@@ -46,11 +46,9 @@ static int receive_any_classic(void * self, Message * msg) {
 
     for (int index_pipe_read = 1; index_pipe_read < number_of_processes; index_pipe_read++) {
         if (index_pipe_read != process->localId) {
-            int result = receive(self, index_pipe_read, msg);
 
-            if (result == -1) {
-                return -1;
-            }
+            receive(self, index_pipe_read, msg);
+
         }
     }
 
@@ -246,21 +244,30 @@ static void create_processes(process *array_of_processes) {
                     message.s_header.s_local_time = get_physical_time();
                     sprintf(message.s_payload, log_done_fmt, get_physical_time(), array_of_processes[i].localId, array_of_processes[i].balance_history.s_history[array_of_processes[i].balance_history.s_history_len - 1].s_balance ); // data of our message in a buffer, set s_payload of Message
                     message.s_header.s_payload_len = (uint16_t) strlen(message.s_payload) + 1; // set s_payload_len of Header
-                    send_multicast(&array_of_processes[i], &message);
 
-                } else if (message.s_header.s_type == DONE) {
-                    // receive DONE
+                    send_multicast(&array_of_processes[i], &message); // send all DONE
+
+
 
                     receive_any_classic(&array_of_processes[i], &message); // receive all DONE
 
 
-                    if (i == 1) {
-                        send_history(&array_of_processes[i]);
-                    }
+                    send_history(&array_of_processes[i]);
 
-                    sleep(1);
 
                     in_cycle = -1;
+
+                } else if (message.s_header.s_type == DONE) {
+                    // receive DONE
+
+//                    receive_any_classic(&array_of_processes[i], &message); // receive all DONE
+//
+//
+//                    send_history(&array_of_processes[i]);
+//
+//                    sleep(1);
+//
+//                    in_cycle = -1;
 
                     //send_history(&array_of_processes[i]);
 
@@ -268,13 +275,14 @@ static void create_processes(process *array_of_processes) {
 
             }
 
+            printf("process %d exit!\n", array_of_processes[i].localId);
 
             exit(0);
         }
     }
 
     Message message;
-    receive_any_classic(&array_of_processes[0], &message); // receive STARTED for PARENT
+    receive_any_classic(&array_of_processes[0], &message); // receive STARTED for PARENT GOOD!
 
     // print
     printf(log_received_all_started_fmt, get_physical_time(), 0);
@@ -288,10 +296,10 @@ static void create_processes(process *array_of_processes) {
     // send STOP
     message.s_header.s_type = STOP;
     message.s_header.s_local_time = get_physical_time();
-    message.s_header.s_payload_len = (uint16_t) strlen(message.s_payload) + 1; // set s_payload_len of Header
+    message.s_header.s_payload_len = 0; // set s_payload_len of Header
     send_multicast(&array_of_processes[0], &message);
 
-    receive_any_classic(&array_of_processes[0], &message); // receive DONE for PARENT
+    receive_any_classic(&array_of_processes[0], &message); // receive all DONE for PARENT
 
     memset(message.s_payload, 0, message.s_header.s_payload_len); // give 0 to message
 
@@ -300,7 +308,7 @@ static void create_processes(process *array_of_processes) {
 
     AllHistory allHistory;
     allHistory.s_history_len = number_of_processes - 1; // number of children
-    for (int i = 1; i < 2; i++) {
+    for (int i = 1; i < number_of_processes; i++) {
 //        printf("i = %d\n", i);
         if (receive(&array_of_processes[0], i, &message) >= 0) { // receive HISTORY from all children
 

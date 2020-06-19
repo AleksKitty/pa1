@@ -18,7 +18,7 @@ void bank_robbery(void * parent_data, local_id max_id)
 //        transfer(parent_data, i, i + 1, i); // void * parent_data, local_id src, local_id dst, balance_t amount
 //    }
     if (max_id > 1) {
-        transfer(parent_data, 3, 2, 1); // second want send money to first
         transfer(parent_data, 1, 2, 1); // second want send money to first
+        transfer(parent_data, 2, 1, 5); // second want send money to first
     }
 }

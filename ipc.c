@@ -91,33 +91,40 @@ int send_multicast(void * self, const Message * msg) {
  * @return 0 on success, any non-zero value on error
  */
 int receive(void * self, local_id from, Message * msg) {
-    process * receiver = self;
+    process *receiver = self;
 
     int fd = receiver->pipe_read[from]; // where exactly we are sending!
 
-    while(1){
+    while (1) {
         int read_result = read(fd, &msg->s_header, sizeof(MessageHeader));
         printf("read_result = %d\n", read_result);
 
         if (read_result > 0) {
 
-            while(1) {
+            while (1) {
                 int result = read(fd, &msg->s_payload, msg->s_header.s_payload_len);
                 printf("result = %d\n", result);
                 if (result >= 0) {
 
                     if (msg->s_header.s_type == TRANSFER) {
-                       printf("Receiving : Process %d received from process %d message : %s\n", receiver->localId, from, "\"TRANSFER\"");
+                        printf("Receiving : Process %d received from process %d message : %s\n", receiver->localId,
+                               from, "\"TRANSFER\"");
                     } else if (msg->s_header.s_type == STARTED) {
-                        printf("Receiving : Process %d received from process %d message : %s\n", receiver->localId, from, (char *) &msg->s_payload);
+                        printf("Receiving : Process %d received from process %d message : %s\n", receiver->localId,
+                               from, (char *) &msg->s_payload);
                     } else if (msg->s_header.s_type == BALANCE_HISTORY) {
-                        printf("Receiving : Process %d received from process %d message : %s\n", receiver->localId, from, "\"HISTORY\"");
-                    } else if (msg->s_header.s_type == DONE){
-                       printf("Receiving : Process %d received from process %d message : %s\n", receiver->localId, from, (char *) &msg->s_payload);
+                        printf("Receiving : Process %d received from process %d message : %s\n", receiver->localId,
+                               from, "\"HISTORY\"");
+                    } else if (msg->s_header.s_type == DONE) {
+                        printf("Receiving : Process %d received from process %d message : %s\n", receiver->localId,
+                               from, (char *) &msg->s_payload);
+                    } else if (msg->s_header.s_type == ACK) {
+                        printf("Receiving : Process %d received from process %d message : %s\n", receiver->localId,
+                               from, "\"ACK\"");
                     }
 
-                    printf("result of receive = %d\n", result);
                     return result;
+
                 } else {
                     sleep(1);
                 }
@@ -127,6 +134,7 @@ int receive(void * self, local_id from, Message * msg) {
         }
     }
 }
+
 
 //------------------------------------------------------------------------------
 
