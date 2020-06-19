@@ -183,7 +183,7 @@ static void create_processes(process *array_of_processes, FILE * event_log) {
             array_of_processes[i].balance_history.s_history[i].s_balance_pending_in = 0; //set time
 
 
-            //close_unnecessary_pipes(array_of_processes, array_of_processes[i].localId); // struct is duplicated, we need to close unnecessary pipes!
+            close_unnecessary_pipes(array_of_processes, array_of_processes[i].localId); // struct is duplicated, we need to close unnecessary pipes!
 
 
             Message message = {.s_header = {.s_type = STARTED, .s_local_time = get_physical_time(), .s_magic = MESSAGE_MAGIC},}; // our message, set s_header of Message; set s_type and s_magic of Header
@@ -243,7 +243,7 @@ static void create_processes(process *array_of_processes, FILE * event_log) {
 
             }
 
-            sleep(10);
+            sleep(5);
             printf("process %d exit!\n", array_of_processes[i].localId);
 
 

@@ -107,14 +107,14 @@ void print_history(const AllHistory * history)
     } else {
         printf("\nFull balance history for time range [0;%d], $balance:\n", max_time);
     }
-    printf(hline);
+    printf("%s", hline);
 
     printf("%s ", first_column_header);
     for (int j = 0; j <= max_time; ++j) {
         printf("%*d |", max_cell_width - 1, j);
     }
     printf("\n");
-    printf(hline);
+    printf("%s", hline);
 
     for (int i = 1; i <= history->s_history_len; ++i) {
         printf("%11d | ", i);
@@ -127,7 +127,7 @@ void print_history(const AllHistory * history)
             printf("%*s|", max_cell_width, buf);
         }
         printf("\n");
-        printf(hline);
+        printf("%s", hline);
     }
 
     printf("      Total | ");
@@ -135,5 +135,5 @@ void print_history(const AllHistory * history)
         printf("%*d |", max_cell_width - 1, table[nrows-1][j].balance);
     }
     printf("\n");
-    printf(hline);
+    printf("%s", hline);
 }
