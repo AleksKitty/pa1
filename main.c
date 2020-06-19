@@ -293,17 +293,21 @@ static void create_processes(process *array_of_processes) {
     for (int i = 1; i < number_of_processes; i++) {
 //        printf("i = %d\n", i);
         if (receive(&array_of_processes[0], i, &message) >= 0) { // receive HISTORY from all children
-            printf("Received i = %d!\n", i);
 
-            memcpy(&allHistory.s_history[i - 1], message.s_payload, message.s_header.s_payload_len);
-            printf("len = %d\n", message.s_header.s_payload_len);
+            if (message.s_header.s_type == BALANCE_HISTORY) {
+                printf("Received i = %d!\n", i);
+
+                memcpy(&allHistory.s_history[i - 1], message.s_payload, message.s_header.s_payload_len);
+
+                printf("len = %d\n", message.s_header.s_payload_len);
+            }
         }
     }
 
     sleep(1);
 
 
-    printf("Received history?");
+    printf("Received history?\n");
 
     print_history(&allHistory);
 

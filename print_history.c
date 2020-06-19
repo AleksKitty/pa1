@@ -28,9 +28,15 @@ void print_history(const AllHistory * history)
     Pair table[nrows][MAX_T];
     memset(table, 0, sizeof(table));
 
+    printf("history->s_history_len = %d\n", history->s_history_len); // right
+
     for (int i = 0; i < history->s_history_len; ++i) {
         for (int j = 0; j < history->s_history[i].s_history_len; ++j) {
+            printf("i = %d, j = %d!\n", i, j);
+            printf("history->s_history[0].s_history_len = %d\n", history->s_history[0].s_history_len); // right
+
             const BalanceState * change = &history->s_history[i].s_history[j];
+            printf("* change done!");
             int id = history->s_history[i].s_id;
             table[id][change->s_time].balance = change->s_balance;
             table[id][change->s_time].pending = change->s_balance_pending_in;
@@ -43,9 +49,12 @@ void print_history(const AllHistory * history)
         }
     }
 
+    printf("First for done!\n");
+
     if (max_time > MAX_T) {
         fprintf(stderr, "print_history: max value of s_time: %d, expected s_time < %d!\n",
                 max_time, MAX_T);
+        printf("Time\n");
         return;
     }
 
