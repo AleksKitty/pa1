@@ -38,8 +38,8 @@ int send(void *self, local_id dst, const Message *msg) {
         return -1;
     }
 
-    if (msg->s_header.s_type != STARTED) {
-        printf("Sending : process %d sent to process %d message: %s\n", sender->localId, dst, msg->s_payload);
+    if (msg->s_header.s_type == TRANSFER) {
+        printf("Sending : process %d sent to process %d message: %s\n", sender->localId, dst, "something");
     }
 
     return 0;
@@ -89,11 +89,15 @@ int receive(void * self, local_id from, Message * msg) {
     int fd = receiver->pipe_read[from]; // where exactly we are sending!
 
     while(1) {
-        if ((read(fd, &msg->s_header, sizeof(MessageHeader))) > 0) {
+        if (read(fd, &msg->s_header, sizeof(MessageHeader)) > 0) {
             while(1) {
-                if ((read(fd, &msg->s_payload, msg->s_header.s_payload_len)) >= 0) {
+                if (read(fd, &msg->s_payload, msg->s_header.s_payload_len) >= 0) {
 
-                    printf("Receiving : Process %d received from process %d message : %s\n", receiver->localId, from, (char *) &msg->s_payload);
+                    if (msg->s_header.s_type == TRANSFER) {
+                        printf("Receiving : Process %d received from process %d message : %s\n", receiver->localId, from, "something...");
+                    } else if (msg->s_header.s_type == STARTED){
+                        printf("Receiving : Process %d received from process %d message : %s\n", receiver->localId, from, (char *) &msg->s_payload);
+                    }
                     return 0;
                 }
             }
@@ -117,24 +121,24 @@ int receive(void * self, local_id from, Message * msg) {
  */
 int receive_any(void * self, Message * msg) {
     process *process = self;
-    printf("Receive any:");
-    printf("\n");
+    printf("Receive any by process %d\n", process->localId);
 
     while (1) {
         for (int index_pipe_read = 0; index_pipe_read < number_of_processes; index_pipe_read++) {
-            if (index_pipe_read != process->localId) {
-                if ((read(process->pipe_read[index_pipe_read], &msg->s_header, sizeof(MessageHeader))) > 0) {
+            if (read(process->pipe_read[index_pipe_read], &msg->s_header, sizeof(MessageHeader)) > 0) {
+                while (1) {
+                    if (read(process->pipe_read[index_pipe_read], &msg->s_payload, msg->s_header.s_payload_len) >= 0) {
 
-                    if ((read(process->pipe_read[index_pipe_read], &msg->s_payload, msg->s_header.s_payload_len)) >= 0) {
-
-                        printf("Receiving : Process %d received from process %d message : %s\n", process->localId, index_pipe_read, (char *) &msg->s_payload);
+                        if (msg->s_header.s_type == TRANSFER) {
+                            printf("Receiving : Process %d received from process %d message : %s\n", process->localId,
+                                   index_pipe_read, "something...");
+                        } else if (msg->s_header.s_type == STARTED) {
+                            printf("Receiving : Process %d received from process %d message : %s\n", process->localId,
+                                   index_pipe_read, (char *) &msg->s_payload);
+                        }
                         return 0;
                     }
-
-                } else {
-                    //usleep(1000);
                 }
-
             }
         }
     }
