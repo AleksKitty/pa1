@@ -140,6 +140,7 @@ static void change_balances(process* processik, TransferOrder transferOrder, Mes
     update_balance_to_time(processik, current_time);
 
     printf("\nprocess %d AFTER s_history_len = %d\n", processik->localId, processik->balance_history.s_history_len);
+    printf("process %d s_history[%d].s_balance = %d\n\n", processik->localId, current_time, processik->balance_history.s_history[current_time].s_balance);
 
 //    printf("s_src = %d\n", transferOrder.s_src);
 //    printf("s_dst = %d\n", transferOrder.s_dst);
@@ -148,7 +149,6 @@ static void change_balances(process* processik, TransferOrder transferOrder, Mes
         //printf("It's a source!\n\n");
         processik->balance_history.s_history[current_time].s_balance -= transferOrder.s_amount;
         //printf("I am source process %d s_history[%d].s_balance = %d\n\n", processik->localId, current_time, processik->balance_history.s_history[current_time].s_balance);
-
 
         send(processik, transferOrder.s_dst, messageFromParent); // sent to another process message from Parent (money)
 
@@ -249,7 +249,7 @@ static void create_processes(process *array_of_processes, FILE * event_log) {
 
             }
 
-            sleep(5);
+            sleep(10);
             printf("process %d exit!\n", array_of_processes[i].localId);
 
 
