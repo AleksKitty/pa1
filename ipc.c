@@ -96,15 +96,15 @@ int receive(void * self, local_id from, Message * msg) {
     int fd = receiver->pipe_read[from]; // where exactly we are sending!
 
     while(1){
-        int read_result;
-        read_result = read(fd, &msg->s_header, sizeof(MessageHeader));
+        int read_result = read(fd, &msg->s_header, sizeof(MessageHeader));
         printf("read_result = %d\n", read_result);
 
         if (read_result > 0) {
 
             while(1) {
-                int result;
-                if ((result = read(fd, &msg->s_payload, msg->s_header.s_payload_len)) >= 0) {
+                int result = read(fd, &msg->s_payload, msg->s_header.s_payload_len);
+                printf("result = %d\n", result);
+                if (result >= 0) {
 
                     if (msg->s_header.s_type == TRANSFER) {
                        printf("Receiving : Process %d received from process %d message : %s\n", receiver->localId, from, "\"TRANSFER\"");
@@ -121,7 +121,7 @@ int receive(void * self, local_id from, Message * msg) {
                 }
             }
         } else {
-            //usleep(1000);
+            sleep(1);
         }
     }
 }
