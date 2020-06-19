@@ -22,26 +22,8 @@ typedef struct {
     BalanceHistory balance_history; // struct for money and time of our process (Parent doesn't have money)
 }  process;
 
-//static int receive_classic(void * self, local_id from, Message * msg) {
-//    process * receiver = self;
-//
-//
-//    int fd = receiver->pipe_read[from]; // where exactly we are sending!
-//
-//    if (read(fd, &msg->s_header, sizeof(MessageHeader)) > 0) {
-//
-//        if (read(fd, &msg->s_payload, msg->s_header.s_payload_len) >= 0) {
-//
-//           // printf("Receiving : Process %d received from process %d message : %s\n", receiver->localId, from, (char *) &msg->s_payload);
-//
-//            return 0;
-//        }
-//    }
-//
-//    return -1;
-//}
 
-static int receive_any_classic(void * self, Message * msg) {
+static int receive_from_all_children(void * self, Message * msg) {
     process *process = self;
 
     for (int index_pipe_read = 1; index_pipe_read < number_of_processes; index_pipe_read++) {
@@ -214,7 +196,7 @@ static void create_processes(process *array_of_processes) {
             fprintf(event_log, log_started_fmt, get_physical_time(), i, getpid(), getppid(), array_of_processes[i].balance_history.s_history->s_balance);
             fflush(event_log);
 
-            receive_any_classic(&array_of_processes[i], &message); // receive all STARTED
+            receive_from_all_children(&array_of_processes[i], &message); // receive all STARTED
 
             // print
             //printf(log_received_all_started_fmt, get_physical_time(), i);
@@ -249,27 +231,13 @@ static void create_processes(process *array_of_processes) {
 
 
 
-                    receive_any_classic(&array_of_processes[i], &message); // receive all DONE
+                    receive_from_all_children(&array_of_processes[i], &message); // receive all DONE
 
 
                     send_history(&array_of_processes[i]);
 
 
                     in_cycle = -1;
-
-                } else if (message.s_header.s_type == DONE) {
-                    // receive DONE
-
-//                    receive_any_classic(&array_of_processes[i], &message); // receive all DONE
-//
-//
-//                    send_history(&array_of_processes[i]);
-//
-//                    sleep(1);
-//
-//                    in_cycle = -1;
-
-                    //send_history(&array_of_processes[i]);
 
                 }
 
@@ -282,7 +250,7 @@ static void create_processes(process *array_of_processes) {
     }
 
     Message message;
-    receive_any_classic(&array_of_processes[0], &message); // receive STARTED for PARENT GOOD!
+    receive_from_all_children(&array_of_processes[0], &message); // receive STARTED for PARENT GOOD!
 
     // print
     printf(log_received_all_started_fmt, get_physical_time(), 0);
@@ -299,10 +267,9 @@ static void create_processes(process *array_of_processes) {
     message.s_header.s_payload_len = 0; // set s_payload_len of Header
     send_multicast(&array_of_processes[0], &message);
 
-    receive_any_classic(&array_of_processes[0], &message); // receive all DONE for PARENT
+    receive_from_all_children(&array_of_processes[0], &message); // receive all DONE for PARENT
 
     memset(message.s_payload, 0, message.s_header.s_payload_len); // give 0 to message
-
 
 
 
@@ -328,7 +295,7 @@ static void create_processes(process *array_of_processes) {
 
     sleep(1);
 
-    printf("Received history?\n");
+    printf("Received history!\n");
 
     print_history(&allHistory);
 

@@ -97,7 +97,7 @@ int receive(void * self, local_id from, Message * msg) {
 
     while (1) {
         int read_result = read(fd, &msg->s_header, sizeof(MessageHeader));
-        printf("read_result = %d\n", read_result);
+        printf("id %d:\t read_result = %d\n", receiver->localId, read_result);
 
         if (read_result > 0) {
 
@@ -107,8 +107,7 @@ int receive(void * self, local_id from, Message * msg) {
                 if (result >= 0) {
 
                     if (msg->s_header.s_type == TRANSFER) {
-                        printf("Receiving : Process %d received from process %d message : %s\n", receiver->localId,
-                               from, "\"TRANSFER\"");
+                        printf("id %d:\t Process %d received from process %d message : %s\n", receiver->localId, receiver->localId, from, "\"TRANSFER\"");
                     } else if (msg->s_header.s_type == STARTED) {
                         printf("Receiving : Process %d received from process %d message : %s\n", receiver->localId,
                                from, (char *) &msg->s_payload);
