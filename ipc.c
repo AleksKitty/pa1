@@ -97,6 +97,12 @@ int receive(void * self, local_id from, Message * msg) {
 
     while(1) {
         if (read(fd, &msg->s_header, sizeof(MessageHeader)) > 0) {
+            if (read(fd, &msg->s_header, sizeof(MessageHeader)) == sizeof(MessageHeader)) {
+                printf("Size of read is right.\n");
+            } else {
+                printf("Wrong.\n");
+            }
+
             while(1) {
                 int result;
                 if ((result = read(fd, &msg->s_payload, msg->s_header.s_payload_len)) >= 0) {
