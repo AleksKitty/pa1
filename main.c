@@ -179,7 +179,8 @@ static void create_processes(process *array_of_processes, FILE * event_log) {
 
             array_of_processes[i].pid = getpid(); // give pid
             array_of_processes[i].balance_history.s_id = i; // set id of Balance_History
-            array_of_processes[i].balance_history.s_history[i].s_time = get_physical_time(); // put input money in structure
+            array_of_processes[i].balance_history.s_history[i].s_time = get_physical_time(); //set time
+            array_of_processes[i].balance_history.s_history[i].s_balance_pending_in = 0; //set time
 
 
             //close_unnecessary_pipes(array_of_processes, array_of_processes[i].localId); // struct is duplicated, we need to close unnecessary pipes!
@@ -331,8 +332,6 @@ int main(int argc, char *argv[]) {
     send_multicast(&array_of_processes[0], &message);
 
     receive_from_all_children(&array_of_processes[0], &message); // receive all DONE for PARENT
-
-    memset(message.s_payload, 0, message.s_header.s_payload_len); // give 0 to message
 
 
     AllHistory allHistory;
