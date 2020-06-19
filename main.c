@@ -175,7 +175,7 @@ static void change_balances(process* processik, TransferOrder transferOrder, Mes
 
         Message message = {.s_header = {.s_type = ACK, .s_magic = MESSAGE_MAGIC},}; // our message, set s_header of Message; set s_type and s_magic of Header
         sprintf(message.s_payload, log_transfer_in_fmt, get_physical_time(),processik->localId, transferOrder.s_amount, transferOrder.s_src); // data of our message in a buffer, set s_payload of Message
-        message.s_header.s_payload_len = (uint16_t) strlen(message.s_payload); // set s_payload_len of Header
+        message.s_header.s_payload_len = (uint16_t) strlen(message.s_payload) + 1; // set s_payload_len of Header
 
         send(processik, 0, &message); // sent to Parent that we received Money from s_src (send ACK)
     }
