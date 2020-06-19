@@ -297,14 +297,16 @@ static void create_processes(process *array_of_processes) {
 
 
 
+
     AllHistory allHistory;
     allHistory.s_history_len = number_of_processes - 1; // number of children
     for (int i = 1; i < number_of_processes; i++) {
 //        printf("i = %d\n", i);
         if (receive(&array_of_processes[0], i, &message) >= 0) { // receive HISTORY from all children
 
+            printf("Received i = %d!, type = %d\n", i, message.s_header.s_type);
+
             if (message.s_header.s_type == BALANCE_HISTORY) {
-                printf("Received i = %d!\n", i);
 
                 memcpy(&allHistory.s_history[i - 1], message.s_payload, message.s_header.s_payload_len);
 
