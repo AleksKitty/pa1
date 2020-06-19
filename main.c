@@ -32,7 +32,7 @@ static int receive_classic(void * self, local_id from, Message * msg) {
 
         if (read(fd, &msg->s_payload, msg->s_header.s_payload_len) >= 0) {
 
-            printf("Receiving : Process %d received from process %d message : %s\n", receiver->localId, from, (char *) &msg->s_payload);
+           // printf("Receiving : Process %d received from process %d message : %s\n", receiver->localId, from, (char *) &msg->s_payload);
 
             return 0;
         }
@@ -145,7 +145,7 @@ static void change_balances(process* processik, TransferOrder transferOrder, Mes
 //    printf("current_time = %d\n", current_time);
  //   printf("\nprocess %d s_history_len = %d\n",processik->localId, processik->balance_history.s_history_len);
 
-    printf("process %d my last amount s_history[%d].s_balance = %d\n\n", processik->localId, processik->balance_history.s_history_len - 1, processik->balance_history.s_history[processik->balance_history.s_history_len - 1].s_balance);
+//    printf("process %d my last amount s_history[%d].s_balance = %d\n\n", processik->localId, processik->balance_history.s_history_len - 1, processik->balance_history.s_history[processik->balance_history.s_history_len - 1].s_balance);
     for (int time = processik->balance_history.s_history_len; time < current_time + 1; time++) {
         processik->balance_history.s_history[time].s_balance = processik->balance_history.s_history[time - 1].s_balance;
 
@@ -254,6 +254,7 @@ static void create_processes(process *array_of_processes) {
                     receive_any_classic(&array_of_processes[i], &message); // receive all DONE
 
                     send_history(&array_of_processes[i]);
+
                     sleep(1);
 
                     in_cycle = -1;
@@ -287,24 +288,24 @@ static void create_processes(process *array_of_processes) {
     memset(message.s_payload, 0, message.s_header.s_payload_len); // give 0 to message
 
 
-    receive_any_classic(&array_of_processes[0], &message); // receive HISTORY from all children
-
-//    AllHistory allHistory;
-//    allHistory.s_history_len = number_of_processes - 1; // number of children
-//    for (int i = 1; i < number_of_processes; i++) {
+    AllHistory allHistory;
+    allHistory.s_history_len = number_of_processes - 1; // number of children
+    for (int i = 1; i < number_of_processes; i++) {
 //        printf("i = %d\n", i);
-//        if (receive(&array_of_processes[0], i, &message) >= 0) { // receive HISTORY from all children
-//            printf("Received i = %d!\n", i);
-//            printf("type = %d\n", message.s_header.s_type);
-//            memcpy(&allHistory.s_history[i - 1], message.s_payload, message.s_header.s_payload_len);
-//        }
-//    }
+        if (receive(&array_of_processes[0], i, &message) >= 0) { // receive HISTORY from all children
+            printf("Received i = %d!\n", i);
 
+            memcpy(&allHistory.s_history[i - 1], message.s_payload, message.s_header.s_payload_len);
+            printf("len = %d\n", message.s_header.s_payload_len);
+        }
+    }
+
+    sleep(1);
 
 
     printf("Received history?");
 
-    //print_history(&allHistory);
+    print_history(&allHistory);
 
     fclose(event_log);
 }

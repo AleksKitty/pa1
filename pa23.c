@@ -19,7 +19,7 @@ typedef struct {
 
 // sending and receiving Message with MONEY from one process to another
 void transfer(void * parent_data, local_id src, local_id dst, balance_t amount){
-    printf("Transfer function:\n\n");
+//    printf("Transfer function:\n\n");
 
     process *parent_process = parent_data;
 

@@ -12,6 +12,7 @@
 void print_history(const AllHistory * history)
 {
     if (history == NULL) {
+        printf("NULL");
         fprintf(stderr, "print_history: history is NULL!\n");
         exit(1);
     }
