@@ -213,12 +213,16 @@ static void create_processes(process *array_of_processes) {
                 } else if (message.s_header.s_type == STOP) {
                     //printf("Message type = STOP\n");
 
-                    // send and receive DONE
+                    // send DONE
                     message.s_header.s_type = DONE;
                     sprintf(message.s_payload, log_done_fmt, get_physical_time(), array_of_processes[i].localId, array_of_processes[i].balance_history.s_history[array_of_processes[i].balance_history.s_history_len - 1].s_balance ); // data of our message in a buffer, set s_payload of Message
                     message.s_header.s_payload_len = (uint16_t) strlen(message.s_payload) + 1; // set s_payload_len of Header
                     send_multicast(&array_of_processes[i], &message);
 
+                } else if (message.s_header.s_type == DONE) {
+                    // receive DONE
+
+                    receive_any_classic(&array_of_processes[i], &message); // receive STARTED
                     in_cycle = -1;
                 }
 
