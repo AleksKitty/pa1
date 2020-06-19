@@ -101,13 +101,13 @@ int receive(void * self, local_id from, Message * msg) {
                 if (read(fd, &msg->s_payload, msg->s_header.s_payload_len) >= 0) {
 
                     if (msg->s_header.s_type == TRANSFER) {
-                       // printf("Receiving : Process %d received from process %d message : %s\n", receiver->localId, from, "\"TRANSFER\"");
+                       printf("Receiving : Process %d received from process %d message : %s\n", receiver->localId, from, "\"TRANSFER\"");
                     } else if (msg->s_header.s_type == STARTED){
-                        //printf("Receiving : Process %d received from process %d message : %s\n", receiver->localId, from, (char *) &msg->s_payload);
+                        printf("Receiving : Process %d received from process %d message : %s\n", receiver->localId, from, (char *) &msg->s_payload);
                     } else if (msg->s_header.s_type == BALANCE_HISTORY) {
                         printf("Receiving : Process %d received from process %d message : %s\n", receiver->localId, from, "\"HISTORY\"");
-                    } else {
-                        //printf("Receiving : Process %d received from process %d message : %s\n", receiver->localId, from, (char *) &msg->s_payload);
+                    } else if (msg->s_header.s_type == DONE){
+                       printf("Receiving : Process %d received from process %d message : %s\n", receiver->localId, from, (char *) &msg->s_payload);
                     }
                     return 0;
                 }
