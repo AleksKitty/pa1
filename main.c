@@ -4,6 +4,7 @@
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/wait.h>
+#include <fcntl.h>
 
 #include "ipc.h"
 #include "common.h"
@@ -56,8 +57,12 @@ static void create_pipes(process *array_of_processes) {
                     exit(-1);
                 }
 
+                fcntl(fd[0], F_SETFL, fcntl(fd[1], F_GETFL) | O_NONBLOCK); // make pipes not blocking!!!
+                fcntl(fd[1], F_SETFL, fcntl(fd[1], F_GETFL) | O_NONBLOCK); // make pipes not blocking!!!
+
                 array_of_processes[j].pipe_read[i] = fd[0]; // j read from i
                 array_of_processes[i].pipe_write[j] = fd[1]; // i write into j
+
 
                 printf("Pipe (read %d, write %d) has OPENED\n", fd[0], fd[1]);
                 fprintf(pipe_log, "Pipe (read %d, write %d) has OPENED\n", fd[0], fd[1]);
@@ -184,12 +189,13 @@ static void create_processes(process *array_of_processes) {
             receive_any_classic(&array_of_processes[i], &message); // receive STARTED
 
             // print
-            printf(log_received_all_started_fmt, get_physical_time(), i);
+            //printf(log_received_all_started_fmt, get_physical_time(), i);
             fprintf(event_log, log_received_all_started_fmt, get_physical_time(), i);
             fflush(event_log);
 
             int in_cycle = 5;
             while(in_cycle > 0) {
+                printf("in_cycle = %d\n", in_cycle);
 
                 memset(message.s_payload, 0, message.s_header.s_payload_len);
                 receive_any(&array_of_processes[i], &message); // receive (at first step)TRANSFER from Parent
@@ -202,6 +208,7 @@ static void create_processes(process *array_of_processes) {
 
                     memcpy(&transferOrder, message.s_payload, message.s_header.s_payload_len); // get transferOrder from message buffer (memcpy = copy)
                     change_balances(array_of_processes[i], transferOrder, message);
+
                 }
 
 
@@ -222,7 +229,7 @@ static void create_processes(process *array_of_processes) {
 //            fprintf(event_log, log_received_all_done_fmt, i);
 //            fflush(event_log);
 
-                printf("in_cycle = %d\n", in_cycle);
+
 
                 in_cycle -= 1;
 
