@@ -112,44 +112,44 @@ static void close_all_pipes(process array_of_processes[]) {
     }
 }
 
-static void change_balances(process processik, TransferOrder transferOrder, Message messageFromParent) {
+static void change_balances(process* processik, TransferOrder transferOrder, Message* messageFromParent) {
     timestamp_t current_time = get_physical_time();
 //    printf("current_time = %d\n", current_time);
-    printf("\nprocess %d s_history_len = %d\n",processik.localId, processik.balance_history.s_history_len);
+    printf("\nprocess %d s_history_len = %d\n",processik->localId, processik->balance_history.s_history_len);
 
-    printf("process %d my last amount s_history[%d].s_balance = %d\n\n", processik.localId, processik.balance_history.s_history_len - 1, processik.balance_history.s_history[processik.balance_history.s_history_len - 1].s_balance);
-    for (int time = processik.balance_history.s_history_len; time < current_time + 1; time++) {
-        processik.balance_history.s_history[time].s_balance = processik.balance_history.s_history[time - 1].s_balance;
+    printf("process %d my last amount s_history[%d].s_balance = %d\n\n", processik->localId, processik->balance_history.s_history_len - 1, processik->balance_history.s_history[processik->balance_history.s_history_len - 1].s_balance);
+    for (int time = processik->balance_history.s_history_len; time < current_time + 1; time++) {
+        processik->balance_history.s_history[time].s_balance = processik->balance_history.s_history[time - 1].s_balance;
 
-        printf("process %d s_history[%d].s_balance = %d\n\n", processik.localId, time, processik.balance_history.s_history[time].s_balance);
+        printf("process %d s_history[%d].s_balance = %d\n\n", processik->localId, time, processik->balance_history.s_history[time].s_balance);
 
-        processik.balance_history.s_history[time].s_time = time;
-        processik.balance_history.s_history_len = current_time + 1;
+        processik->balance_history.s_history[time].s_time = time;
+        processik->balance_history.s_history_len = current_time + 1;
     }
 
-    printf("\nprocess %d AFTER s_history_len = %d\n",processik.localId, processik.balance_history.s_history_len);
+    printf("\nprocess %d AFTER s_history_len = %d\n", processik->localId, processik->balance_history.s_history_len);
 
 //    printf("s_src = %d\n", transferOrder.s_src);
 //    printf("s_dst = %d\n", transferOrder.s_dst);
 
-    if (transferOrder.s_src == processik.localId) {
+    if (transferOrder.s_src == processik->localId) {
         //printf("It's a source!\n\n");
-        processik.balance_history.s_history[current_time].s_balance -= transferOrder.s_amount;
-        printf("I am source process %d s_history[%d].s_balance = %d\n\n", processik.localId, current_time, processik.balance_history.s_history[current_time].s_balance);
+        processik->balance_history.s_history[current_time].s_balance -= transferOrder.s_amount;
+        printf("I am source process %d s_history[%d].s_balance = %d\n\n", processik->localId, current_time, processik->balance_history.s_history[current_time].s_balance);
 
 
-        send(&processik, transferOrder.s_dst, &messageFromParent); // sent to another process message from Parent (money)
+        send(processik, transferOrder.s_dst, messageFromParent); // sent to another process message from Parent (money)
 
-    } else if (transferOrder.s_dst == processik.localId) {
+    } else if (transferOrder.s_dst == processik->localId) {
         //printf("It's a destination!\n\n");
-        printf("I am destination process %d, my balance was: s_history[%d].s_balance = %d\n", processik.localId, current_time, processik.balance_history.s_history[current_time].s_balance);
-        processik.balance_history.s_history[current_time].s_balance += transferOrder.s_amount;
-        printf("I am destination process %d, my balance is: s_history[%d].s_balance = %d\n", processik.localId, current_time, processik.balance_history.s_history[current_time].s_balance);
+        printf("I am destination process %d, my balance was: s_history[%d].s_balance = %d\n",processik->localId, current_time, processik->balance_history.s_history[current_time].s_balance);
+        processik->balance_history.s_history[current_time].s_balance += transferOrder.s_amount;
+        printf("I am destination process %d, my balance is: s_history[%d].s_balance = %d\n", processik->localId, current_time, processik->balance_history.s_history[current_time].s_balance);
 
         Message message = {.s_header = {.s_type = ACK, .s_magic = MESSAGE_MAGIC},}; // our message, set s_header of Message; set s_type and s_magic of Header
-        sprintf(message.s_payload, log_transfer_in_fmt, get_physical_time(), processik.localId, transferOrder.s_amount, transferOrder.s_src); // data of our message in a buffer, set s_payload of Message
+        sprintf(message.s_payload, log_transfer_in_fmt, get_physical_time(),processik->localId, transferOrder.s_amount, transferOrder.s_src); // data of our message in a buffer, set s_payload of Message
         message.s_header.s_payload_len = (uint16_t) strlen(message.s_payload) + 1; // set s_payload_len of Header
-        send(&processik, 0, &message); // sent to Parent that we received Money from s_src (send ACK)
+        send(processik, 0, &message); // sent to Parent that we received Money from s_src (send ACK)
     }
 }
 
@@ -208,7 +208,7 @@ static void create_processes(process *array_of_processes) {
                     TransferOrder transferOrder;
 
                     memcpy(&transferOrder, message.s_payload, message.s_header.s_payload_len); // get transferOrder from message buffer (memcpy = copy)
-                    change_balances(array_of_processes[i], transferOrder, message);
+                    change_balances(&array_of_processes[i], transferOrder, &message);
 
                 } else if (message.s_header.s_type == STOP) {
                     //printf("Message type = STOP\n");
