@@ -28,12 +28,12 @@ void print_history(const AllHistory * history)
     Pair table[nrows][MAX_T];
     memset(table, 0, sizeof(table));
 
-    printf("history->s_history_len = %d\n", history->s_history_len); // right
+//    printf("history->s_history_len = %d\n", history->s_history_len); // right
 
     for (int i = 0; i < history->s_history_len; ++i) {
         for (int j = 0; j < history->s_history[i].s_history_len; ++j) {
-            printf("i = %d, j = %d!\n", i, j);
-            printf("history->s_history[0].s_history_len = %d\n", history->s_history[0].s_history_len); // right
+//            printf("i = %d, j = %d!\n", i, j);
+//            printf("history->s_history[0].s_history_len = %d\n", history->s_history[0].s_history_len); // right
 
             const BalanceState * change = &history->s_history[i].s_history[j];
             printf("* change done!");

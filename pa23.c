@@ -27,8 +27,8 @@ void transfer(void * parent_data, local_id src, local_id dst, balance_t amount){
 
     TransferOrder transferOrder = {src, dst, amount}; // what we will put in a buffer of Message
 
-    memcpy(message.s_payload, &transferOrder, sizeof(TransferOrder) + 1); // put transfer in message buffer (memcpy = copy)
-    message.s_header.s_payload_len = sizeof(TransferOrder) + 1; // set size of Message
+    memcpy(message.s_payload, &transferOrder, sizeof(TransferOrder)); // put transfer in message buffer (memcpy = copy)
+    message.s_header.s_payload_len = sizeof(TransferOrder); // set size of Message
 
 
     send(parent_process, src, &message); // send TRANSFER

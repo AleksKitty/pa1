@@ -175,7 +175,7 @@ static void change_balances(process* processik, TransferOrder transferOrder, Mes
 
         Message message = {.s_header = {.s_type = ACK, .s_magic = MESSAGE_MAGIC},}; // our message, set s_header of Message; set s_type and s_magic of Header
         sprintf(message.s_payload, log_transfer_in_fmt, get_physical_time(),processik->localId, transferOrder.s_amount, transferOrder.s_src); // data of our message in a buffer, set s_payload of Message
-        message.s_header.s_payload_len = (uint16_t) strlen(message.s_payload) + 1; // set s_payload_len of Header
+        message.s_header.s_payload_len = (uint16_t) strlen(message.s_payload); // set s_payload_len of Header
 
         send(processik, 0, &message); // sent to Parent that we received Money from s_src (send ACK)
     }
@@ -253,14 +253,22 @@ static void create_processes(process *array_of_processes) {
 
                     receive_any_classic(&array_of_processes[i], &message); // receive all DONE
 
-                    send_history(&array_of_processes[i]);
+
+                    if (i == 1) {
+                        send_history(&array_of_processes[i]);
+                    }
 
                     sleep(1);
 
                     in_cycle = -1;
+
+                    //send_history(&array_of_processes[i]);
+
                 }
 
             }
+
+
             exit(0);
         }
     }
@@ -288,6 +296,8 @@ static void create_processes(process *array_of_processes) {
     memset(message.s_payload, 0, message.s_header.s_payload_len); // give 0 to message
 
 
+
+
     AllHistory allHistory;
     allHistory.s_history_len = number_of_processes - 1; // number of children
     for (int i = 1; i < number_of_processes; i++) {
@@ -299,13 +309,15 @@ static void create_processes(process *array_of_processes) {
 
                 memcpy(&allHistory.s_history[i - 1], message.s_payload, message.s_header.s_payload_len);
 
+                printf("len = %d\n", allHistory.s_history[i - 1].s_history[0].s_balance);
+
                 printf("len = %d\n", message.s_header.s_payload_len);
             }
+
         }
     }
 
     sleep(1);
-
 
     printf("Received history?\n");
 
