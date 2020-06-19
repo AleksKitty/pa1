@@ -133,7 +133,7 @@ static void close_all_pipes(process array_of_processes[]) {
 static void send_history(process* processik) {
     Message message = {.s_header = {.s_type = BALANCE_HISTORY, .s_local_time = get_physical_time(), .s_magic = MESSAGE_MAGIC},}; // our message, set s_header of Message; set s_type and s_magic of Header
 
-    message.s_header.s_payload_len = (uint16_t) sizeof(BalanceHistory) + sizeof(BalanceState) * processik->balance_history.s_history_len + 1; // set s_payload_len of Header
+    message.s_header.s_payload_len = (uint16_t) sizeof(BalanceHistory) + sizeof(BalanceState) * processik->balance_history.s_history_len; // set s_payload_len of Header
 
     memcpy(message.s_payload, &processik->balance_history, message.s_header.s_payload_len);
 
@@ -294,7 +294,6 @@ static void create_processes(process *array_of_processes) {
     receive_any_classic(&array_of_processes[0], &message); // receive DONE for PARENT
 
     memset(message.s_payload, 0, message.s_header.s_payload_len); // give 0 to message
-
 
 
 
