@@ -41,15 +41,15 @@ int send(void *self, local_id dst, const Message *msg) {
     }
 
     if (msg->s_header.s_type == TRANSFER) {
-        log(sender->localId, "send", "Sending : process %d sent to process %d message: %s\n", sender->localId, dst, "\"TRANSFER\"");
+        log(sender->localId, "send", "Sending : process %d sent to process %d message: %s", sender->localId, dst, "\"TRANSFER\"");
     } else if (msg->s_header.s_type == ACK) {
-        log(sender->localId, "send","Sending : process %d sent to process %d message: %s\n", sender->localId, dst, (char *) msg->s_payload);
+        log(sender->localId, "send","Sending : process %d sent to process %d message: %s", sender->localId, dst, (char *) msg->s_payload);
     } else if (msg->s_header.s_type == STOP) {
-        log(sender->localId, "send","Sending : process %d sent to process %d message: %s\n", sender->localId, dst, "\"STOP\"");
+        log(sender->localId, "send","Sending : process %d sent to process %d message: %s", sender->localId, dst, "\"STOP\"");
     } else if ( msg->s_header.s_type == DONE) {
-        log(sender->localId, "send","Sending : process %d sent to process %d message: %s\n", sender->localId, dst, (char *) msg->s_payload);
+        log(sender->localId, "send","Sending : process %d sent to process %d message: %s", sender->localId, dst, (char *) msg->s_payload);
     } else if ( msg->s_header.s_type == BALANCE_HISTORY) {
-        log(sender->localId, "send","Sending : process %d sent to process %d message: %s\n", sender->localId, dst, "\"HISTORY\"");
+        log(sender->localId, "send","Sending : process %d sent to process %d message: %s", sender->localId, dst, "\"HISTORY\"");
     }
     return 0;
 }
@@ -114,13 +114,13 @@ int receive(void * self, local_id from, Message * msg) {
                         log(receiver->localId, "receive", "Process %d received from process %d message : %s", receiver->localId,
                                from, (char *) &msg->s_payload);
                     } else if (msg->s_header.s_type == BALANCE_HISTORY) {
-                        log(receiver->localId, "receive", "Process %d received from process %d message : %s\n", receiver->localId,
+                        log(receiver->localId, "receive", "Process %d received from process %d message : %s", receiver->localId,
                                from, "\"HISTORY\"");
                     } else if (msg->s_header.s_type == DONE) {
-                        log(receiver->localId, "receive", "Process %d received from process %d message : %s\n", receiver->localId,
+                        log(receiver->localId, "receive", "Process %d received from process %d message : %s", receiver->localId,
                                from, (char *) &msg->s_payload);
                     } else if (msg->s_header.s_type == ACK) {
-                        log(receiver->localId, "receive", "Process %d received from process %d message : %s\n", receiver->localId,
+                        log(receiver->localId, "receive", "Process %d received from process %d message : %s", receiver->localId,
                                from, "\"ACK\"");
                     }
 
@@ -169,18 +169,18 @@ int receive_any(void * self, Message * msg) {
                 if (read(processik->pipe_read[index_pipe_read], &msg->s_payload, msg->s_header.s_payload_len) >= 0) {
 
                     if (msg->s_header.s_type == TRANSFER) {
-                        log(processik->localId, "receive", "Process %d received from process %d message : %s", processik->localId, processik->pipe_read[index_pipe_read], "\"TRANSFER\"");
+                        log(processik->localId, "receive_any", "Process %d received from process %d message : %s", processik->localId, processik->pipe_read[index_pipe_read], "\"TRANSFER\"");
                     } else if (msg->s_header.s_type == STARTED) {
-                        log(processik->localId, "receive", "Process %d received from process %d message : %s", processik->localId,
+                        log(processik->localId, "receive_any", "Process %d received from process %d message : %s", processik->localId,
                             processik->pipe_read[index_pipe_read], (char *) &msg->s_payload);
                     } else if (msg->s_header.s_type == BALANCE_HISTORY) {
-                        log(processik->localId, "receive", "Process %d received from process %d message : %s\n", processik->localId,
+                        log(processik->localId, "receive_any", "Process %d received from process %d message : %s", processik->localId,
                             processik->pipe_read[index_pipe_read], "\"HISTORY\"");
                     } else if (msg->s_header.s_type == DONE) {
-                        log(processik->localId, "receive", "Process %d received from process %d message : %s\n", processik->localId,
+                        log(processik->localId, "receive_any", "Process %d received from process %d message : %s", processik->localId,
                             processik->pipe_read[index_pipe_read], (char *) &msg->s_payload);
                     } else if (msg->s_header.s_type == ACK) {
-                        log(processik->localId, "receive", "Process %d received from process %d message : %s\n", processik->localId,
+                        log(processik->localId, "receive_any", "Process %d received from process %d message : %s", processik->localId,
                             processik->pipe_read[index_pipe_read], "\"ACK\"");
                     }
 
