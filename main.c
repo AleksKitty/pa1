@@ -307,8 +307,6 @@ int main(int argc, char *argv[]) {
 
     printf("Number of processes = %d\n", number_of_processes);
 
-    close_unnecessary_pipes(array_of_processes, 0);
-
     create_pipes(array_of_processes); // our function for creating all pipes
 
     array_of_processes[0].localId = PARENT_ID; // for parent process
@@ -316,10 +314,9 @@ int main(int argc, char *argv[]) {
 
     FILE *event_log = fopen(events_log, "a"); // for writing into file
 
-
     create_processes(array_of_processes, event_log);
 
-
+    close_unnecessary_pipes(array_of_processes, 0);
 
     Message message;
     receive_from_all_children(&array_of_processes[0], &message); // receive STARTED for PARENT GOOD!
