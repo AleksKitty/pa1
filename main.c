@@ -61,7 +61,7 @@ static void create_pipes(process *array_of_processes) {
                 int fd[2];
 
                 if (pipe(fd) < 0) { // fail
-                    log(0, "create_pipes", "Can't create new pipe\n");
+                    log(0, "create_pipes", "Can't create new pipe");
                     exit(-1);
                 }
 
@@ -73,7 +73,7 @@ static void create_pipes(process *array_of_processes) {
 
 
                 log(0,"create_pipes", "Pipe (read %d, write %d) has OPENED", fd[0], fd[1]);
-                fprintf(pipe_log, "Pipe (read %d, write %d) has OPENED\n", fd[0], fd[1]);
+                fprintf(pipe_log, "Pipe (read %d, write %d) has OPENED", fd[0], fd[1]);
                 fflush(pipe_log);
             } else {
                 array_of_processes[j].pipe_read[i] = -1; // can't read from itself
@@ -146,7 +146,7 @@ static void change_balances(process* processik, TransferOrder transferOrder, Mes
     update_balance_to_time(processik, current_time);
 
     log(processik->localId, "change_balances","process %d AFTER s_history_len = %d", processik->localId, processik->balance_history.s_history_len);
-    log(processik->localId, "change_balances","process %d s_history[%d].s_balance = %d\n\n", processik->localId, current_time, processik->balance_history.s_history[current_time].s_balance);
+    log(processik->localId, "change_balances","process %d s_history[%d].s_balance = %d", processik->localId, current_time, processik->balance_history.s_history[current_time].s_balance);
 
 
     if (transferOrder.s_src == processik->localId) {
@@ -167,7 +167,7 @@ static void change_balances(process* processik, TransferOrder transferOrder, Mes
 
 
 static void create_processes(process *array_of_processes, FILE * event_log) {
-    log(0, "create_processes", "Creating processes:\n");
+    log(0, "create_processes", "Creating processes:");
 
     for (int i = 1; i < number_of_processes; i++) {
         array_of_processes[i].localId = i; // give Local id to the future new process

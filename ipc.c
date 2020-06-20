@@ -7,6 +7,7 @@
 #include <sys/types.h>
 
 #include "ipc.h"
+#include "log.h"
 
 typedef struct {
     pid_t pid; // special id for processes
@@ -14,15 +15,6 @@ typedef struct {
     int *pipe_read; // who we need to READ from
     int *pipe_write; // who we need to WRITE into
 }  process;
-
-static void log (pid_t p, const char * f, const char * m, ...){
-    va_list args;
-    va_start(args, m); // for reading arg
-    printf("p:%d\t\tf:%s\t\tm:", p, f);
-    vprintf(m, args);
-    printf("\n");
-    va_end(args);
-}
 
 
 
