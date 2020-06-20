@@ -11,6 +11,7 @@
 #include "common.h"
 #include "pa2345.h"
 #include "banking.h"
+#include "log.h"
 
 extern int number_of_processes; // from input
 //int processID;
@@ -23,14 +24,6 @@ typedef struct {
     BalanceHistory balance_history; // struct for money and time of our process (Parent doesn't have money)
 }  process;
 
-static void log (pid_t p, const char * f, const char * m, ...){
-    va_list args;
-    va_start(args, m); // for reading arg
-    printf("p:%d\t\tf:%s\t\tm:", p, f);
-    vprintf(m, args);
-    printf("\n");
-    va_end(args);
-}
 
 
 static int receive_from_all_children(void * self, Message * msg) {
