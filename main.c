@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <stdarg.h>
 #include <string.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -21,6 +22,15 @@ typedef struct {
     int *pipe_write; // who we need to WRITE into
     BalanceHistory balance_history; // struct for money and time of our process (Parent doesn't have money)
 }  process;
+
+static void log (pid_t p, const char * f, const char * m, ...){
+    va_list args;
+    va_start(args, m); // for reading arg
+    printf("p:%d\t\tf:%s\t\tm:", p, f);
+    vprintf(m, args);
+    printf("\n");
+    va_end(args);
+}
 
 
 static int receive_from_all_children(void * self, Message * msg) {

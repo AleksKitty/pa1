@@ -163,7 +163,6 @@ int receive_any(void * self, Message * msg) {
 
             printf("p:%d\t f:receive_any\t m:read_header_res = %d\n", processik->localId, result);
 
-
             if (result > 0) {
 
                 if (read(processik->pipe_read[index_pipe_read], &msg->s_payload, msg->s_header.s_payload_len) >= 0) {
