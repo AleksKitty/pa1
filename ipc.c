@@ -2,6 +2,7 @@
 // Created by alex on 13.06.2020.
 //
 #include <stdio.h>
+#include <stdarg.h>
 #include <unistd.h>
 #include <sys/types.h>
 
@@ -13,6 +14,15 @@ typedef struct {
     int *pipe_read; // who we need to READ from
     int *pipe_write; // who we need to WRITE into
 }  process;
+
+static void log (pid_t p, const char * f, const char * m, ...){
+    va_list args;
+    va_start(args, m); // for reading arg
+    printf("p:%d\t\tf:%s\t\tm:", p, f);
+    vprintf(m, args);
+    printf("\n");
+    va_end(args);
+}
 
 
 
@@ -39,15 +49,15 @@ int send(void *self, local_id dst, const Message *msg) {
     }
 
     if (msg->s_header.s_type == TRANSFER) {
-        printf("Sending : process %d sent to process %d message: %s\n", sender->localId, dst, "\"TRANSFER\"");
-    } else if (msg->s_header.s_type == ACK ) {
-        printf("Sending : process %d sent to process %d message: %s\n", sender->localId, dst, (char *) msg->s_payload);
+        log(sender->localId, "send", "Sending : process %d sent to process %d message: %s\n", sender->localId, dst, "\"TRANSFER\"");
+    } else if (msg->s_header.s_type == ACK) {
+        log(sender->localId, "send","Sending : process %d sent to process %d message: %s\n", sender->localId, dst, (char *) msg->s_payload);
     } else if (msg->s_header.s_type == STOP) {
-        printf("Sending : process %d sent to process %d message: %s\n", sender->localId, dst, "\"STOP\"");
+        log(sender->localId, "send","Sending : process %d sent to process %d message: %s\n", sender->localId, dst, "\"STOP\"");
     } else if ( msg->s_header.s_type == DONE) {
-        printf("Sending : process %d sent to process %d message: %s\n", sender->localId, dst, (char *) msg->s_payload);
+        log(sender->localId, "send","Sending : process %d sent to process %d message: %s\n", sender->localId, dst, (char *) msg->s_payload);
     } else if ( msg->s_header.s_type == BALANCE_HISTORY) {
-        printf("Sending : process %d sent to process %d message: %s\n", sender->localId, dst, "\"HISTORY\"");
+        log(sender->localId, "send","Sending : process %d sent to process %d message: %s\n", sender->localId, dst, "\"HISTORY\"");
     }
     return 0;
 }
@@ -70,7 +80,7 @@ int send_multicast(void * self, const Message * msg) {
         if (i != process->localId) {
 
             if (send(self, i, msg) == -1) {
-                printf("Send = -1");
+                log(process->localId, "send_multicast","Send = -1");
                 return -1;
             }
         }
@@ -97,28 +107,28 @@ int receive(void * self, local_id from, Message * msg) {
 
     while (1) {
         int read_result = read(fd, &msg->s_header, sizeof(MessageHeader));
-        printf("id %d:\t read_result = %d\n", receiver->localId, read_result);
+        log(receiver->localId, "receive", "read_header_res = %d", read_result);
 
         if (read_result > 0) {
 
             while (1) {
                 int result = read(fd, &msg->s_payload, msg->s_header.s_payload_len);
-                printf("result = %d\n", result);
+                log(receiver->localId, "receive", "read_msg_res = %d", result);
                 if (result >= 0) {
 
                     if (msg->s_header.s_type == TRANSFER) {
-                        printf("id %d:\t Process %d received from process %d message : %s\n", receiver->localId, receiver->localId, from, "\"TRANSFER\"");
+                        log(receiver->localId, "receive", "Process %d received from process %d message : %s", receiver->localId, from, "\"TRANSFER\"");
                     } else if (msg->s_header.s_type == STARTED) {
-                        printf("Receiving : Process %d received from process %d message : %s\n", receiver->localId,
+                        log(receiver->localId, "receive", "Process %d received from process %d message : %s", receiver->localId,
                                from, (char *) &msg->s_payload);
                     } else if (msg->s_header.s_type == BALANCE_HISTORY) {
-                        printf("Receiving : Process %d received from process %d message : %s\n", receiver->localId,
+                        log(receiver->localId, "receive", "Process %d received from process %d message : %s\n", receiver->localId,
                                from, "\"HISTORY\"");
                     } else if (msg->s_header.s_type == DONE) {
-                        printf("Receiving : Process %d received from process %d message : %s\n", receiver->localId,
+                        log(receiver->localId, "receive", "Process %d received from process %d message : %s\n", receiver->localId,
                                from, (char *) &msg->s_payload);
                     } else if (msg->s_header.s_type == ACK) {
-                        printf("Receiving : Process %d received from process %d message : %s\n", receiver->localId,
+                        log(receiver->localId, "receive", "Process %d received from process %d message : %s\n", receiver->localId,
                                from, "\"ACK\"");
                     }
 
@@ -149,7 +159,6 @@ int receive(void * self, local_id from, Message * msg) {
  */
 int receive_any(void * self, Message * msg) {
     process *processik = self;
-    //printf("Receive any by process %d\n", process->localId);
 
     while (1) {
 
@@ -161,20 +170,26 @@ int receive_any(void * self, Message * msg) {
 
             int result = read(processik->pipe_read[index_pipe_read], &msg->s_header, sizeof(MessageHeader));
 
-            printf("p:%d\t f:receive_any\t m:read_header_res = %d\n", processik->localId, result);
+            log(processik->localId,"receive_any", "read_header_res = %d", result);
 
             if (result > 0) {
 
                 if (read(processik->pipe_read[index_pipe_read], &msg->s_payload, msg->s_header.s_payload_len) >= 0) {
 
                     if (msg->s_header.s_type == TRANSFER) {
-                        //  printf("Receiving : Process %d received from process %d message : %s\n", process->localId, index_pipe_read, "\"TRANSFER\"");
+                        log(processik->localId, "receive", "Process %d received from process %d message : %s", processik->localId, processik->pipe_read[index_pipe_read], "\"TRANSFER\"");
                     } else if (msg->s_header.s_type == STARTED) {
-                        //printf("Receiving : Process %d received from process %d message : %s\n", process->localId, index_pipe_read, (char *) &msg->s_payload);
-                    } else if (msg->s_header.s_type == DONE) {
-                        //printf("Receiving : Process %d received from process %d message : %s\n", process->localId, index_pipe_read, (char *) &msg->s_payload);
+                        log(processik->localId, "receive", "Process %d received from process %d message : %s", processik->localId,
+                            processik->pipe_read[index_pipe_read], (char *) &msg->s_payload);
                     } else if (msg->s_header.s_type == BALANCE_HISTORY) {
-                        printf("Receiving : Process %d received from process %d message : %s\n", processik->localId, index_pipe_read, "\"HISTORY\"");
+                        log(processik->localId, "receive", "Process %d received from process %d message : %s\n", processik->localId,
+                            processik->pipe_read[index_pipe_read], "\"HISTORY\"");
+                    } else if (msg->s_header.s_type == DONE) {
+                        log(processik->localId, "receive", "Process %d received from process %d message : %s\n", processik->localId,
+                            processik->pipe_read[index_pipe_read], (char *) &msg->s_payload);
+                    } else if (msg->s_header.s_type == ACK) {
+                        log(processik->localId, "receive", "Process %d received from process %d message : %s\n", processik->localId,
+                            processik->pipe_read[index_pipe_read], "\"ACK\"");
                     }
 
                     return 0;

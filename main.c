@@ -322,6 +322,7 @@ int main(int argc, char *argv[]) {
     fprintf(event_log, log_received_all_started_fmt, get_physical_time(), 0);
     fflush(event_log);
 
+
     bank_robbery(&array_of_processes[0], number_of_processes - 1); // parent and number of children sending many TRANSFER
 
 
