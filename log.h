@@ -10,5 +10,5 @@
 #endif //PA1_LOG_H
 
 
-static void log(pid_t p, const char * f, const char * m, ...);
+void lg(pid_t p, const char * f, const char * m, ...);
 

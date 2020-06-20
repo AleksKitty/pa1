@@ -42,7 +42,7 @@ static int receive_from_all_children(void * self, Message * msg) {
 
 
 static void create_pipes(process *array_of_processes) {
-    log(0, "create_pipes", "Creating pipes!");
+    lg(0, "create_pipes", "Creating pipes!");
 
     FILE *pipe_log = fopen("pipes", "a"); // for writing into file
     for (int i = 0; i < number_of_processes; i++) {
@@ -54,7 +54,7 @@ static void create_pipes(process *array_of_processes) {
                 int fd[2];
 
                 if (pipe(fd) < 0) { // fail
-                    log(0, "create_pipes", "Can't create new pipe");
+                    lg(0, "create_pipes", "Can't create new pipe");
                     exit(-1);
                 }
 
@@ -65,7 +65,7 @@ static void create_pipes(process *array_of_processes) {
                 array_of_processes[i].pipe_write[j] = fd[1]; // i write into j
 
 
-                log(0,"create_pipes", "Pipe (read %d, write %d) has OPENED", fd[0], fd[1]);
+                lg(0, "create_pipes", "Pipe (read %d, write %d) has OPENED", fd[0], fd[1]);
                 fprintf(pipe_log, "Pipe (read %d, write %d) has OPENED", fd[0], fd[1]);
                 fflush(pipe_log);
             } else {
@@ -120,11 +120,11 @@ static void send_history(process* processik) {
 }
 
 static void update_balance_to_time(process* processik, timestamp_t current_time) {
-        //log(processik->localId, "update_balance_to_time", "process %d my last amount s_history[%d].s_balance = %d", processik->localId, processik->balance_history.s_history_len - 1, processik->balance_history.s_history[processik->balance_history.s_history_len - 1].s_balance);
+        //lg(processik->localId, "update_balance_to_time", "process %d my last amount s_history[%d].s_balance = %d", processik->localId, processik->balance_history.s_history_len - 1, processik->balance_history.s_history[processik->balance_history.s_history_len - 1].s_balance);
     for (int time = processik->balance_history.s_history_len; time < current_time + 1; time++) {
         processik->balance_history.s_history[time].s_balance = processik->balance_history.s_history[time - 1].s_balance;
 
-        //log(processik->localId, "update_balance_to_time","process %d s_history[%d].s_balance = %d", processik->localId, time, processik->balance_history.s_history[time].s_balance);
+        //lg(processik->localId, "update_balance_to_time","process %d s_history[%d].s_balance = %d", processik->localId, time, processik->balance_history.s_history[time].s_balance);
 
         processik->balance_history.s_history[time].s_time = time;
         processik->balance_history.s_history_len = current_time + 1;
@@ -133,13 +133,15 @@ static void update_balance_to_time(process* processik, timestamp_t current_time)
 
 static void change_balances(process* processik, TransferOrder transferOrder, Message* messageFromParent) {
     timestamp_t current_time = get_physical_time();
-//    log(processik->localId, "change_balances", "current_time = %d", current_time);
-//    log(processik->localId, "change_balances","process %d s_history_len = %d", processik->localId, processik->balance_history.s_history_len);
+//    lg(processik->localId, "change_balances", "current_time = %d", current_time);
+//    lg(processik->localId, "change_balances","process %d s_history_len = %d", processik->localId, processik->balance_history.s_history_len);
 
     update_balance_to_time(processik, current_time);
 
-    log(processik->localId, "change_balances","process %d AFTER s_history_len = %d", processik->localId, processik->balance_history.s_history_len);
-    log(processik->localId, "change_balances","process %d s_history[%d].s_balance = %d", processik->localId, current_time, processik->balance_history.s_history[current_time].s_balance);
+    lg(processik->localId, "change_balances", "process %d AFTER s_history_len = %d", processik->localId,
+       processik->balance_history.s_history_len);
+    lg(processik->localId, "change_balances", "process %d s_history[%d].s_balance = %d", processik->localId,
+       current_time, processik->balance_history.s_history[current_time].s_balance);
 
 
     if (transferOrder.s_src == processik->localId) {
@@ -160,7 +162,7 @@ static void change_balances(process* processik, TransferOrder transferOrder, Mes
 
 
 static void create_processes(process *array_of_processes, FILE * event_log) {
-    log(0, "create_processes", "Creating processes:");
+    lg(0, "create_processes", "Creating processes:");
 
     for (int i = 1; i < number_of_processes; i++) {
         array_of_processes[i].localId = i; // give Local id to the future new process
@@ -169,10 +171,11 @@ static void create_processes(process *array_of_processes, FILE * event_log) {
 
         // try to create new processes
         if (result_of_fork == -1) {// fail
-            log(0,"create_processes", "Can't create new process");
+            lg(0, "create_processes", "Can't create new process");
             exit(-1);
         } else if (result_of_fork == 0) { // we are in child
-            log(array_of_processes[i].localId, "create_processes", "[son] pid %d from [parent] pid %d", getpid(), getppid());
+            lg(array_of_processes[i].localId, "create_processes", "[son] pid %d from [parent] pid %d", getpid(),
+               getppid());
 
             array_of_processes[i].pid = getpid(); // give pid
             array_of_processes[i].balance_history.s_id = i; // set id of Balance_History
@@ -196,7 +199,7 @@ static void create_processes(process *array_of_processes, FILE * event_log) {
             receive_from_all_children(&array_of_processes[i], &message); // receive all STARTED
 
             // print
-            //log(array_of_processes[i].localId, "create_processes", log_received_all_started_fmt, get_physical_time(), i);
+            //lg(array_of_processes[i].localId, "create_processes", log_received_all_started_fmt, get_physical_time(), i);
             fprintf(event_log, log_received_all_started_fmt, get_physical_time(), i);
             fflush(event_log);
 
@@ -241,7 +244,7 @@ static void create_processes(process *array_of_processes, FILE * event_log) {
             }
 
             sleep(10);
-            log(array_of_processes[i].localId, "create_processes","process %d exit!", array_of_processes[i].localId);
+            lg(array_of_processes[i].localId, "create_processes", "process %d exit!", array_of_processes[i].localId);
 
 
             exit(0);
@@ -261,13 +264,13 @@ int main(int argc, char *argv[]) {
         }
     }
     if (right_arguments != 0) {
-        log(0, "main", "Wrong arguments!");
-        log(0, "main", "argc = %d", argc);
+        lg(0, "main", "Wrong arguments!");
+        lg(0, "main", "argc = %d", argc);
         exit(-1);
     }
 
     if (number_of_processes < 1 || number_of_processes > 10) { // checking number of processes
-        log(0, "main", "Wrong number of processes!");
+        lg(0, "main", "Wrong number of processes!");
         exit(-1);
     }
 
@@ -278,7 +281,7 @@ int main(int argc, char *argv[]) {
 
     for (int i = 3; i < number_of_processes + 2; i++) { // check amount of money
         if (atoi(argv[i]) < 1 || atoi(argv[i]) > 99) {
-            log(0, "main", "Wrong amount of money!");
+            lg(0, "main", "Wrong amount of money!");
             exit(-1);
         }
         balances[i - 2] = atoi(argv[i]); // put from balance[1] etc
@@ -294,7 +297,7 @@ int main(int argc, char *argv[]) {
         array_of_processes[i].balance_history.s_history_len = 1; // put start balance
     }
 
-    log(0, "main","Number of processes = %d", number_of_processes);
+    lg(0, "main", "Number of processes = %d", number_of_processes);
 
     create_pipes(array_of_processes); // our function for creating all pipes
 
@@ -311,7 +314,7 @@ int main(int argc, char *argv[]) {
     receive_from_all_children(&array_of_processes[0], &message); // receive STARTED for PARENT GOOD!
 
     // print
-    log(0, "main", log_received_all_started_fmt, get_physical_time(), 0);
+    lg(0, "main", log_received_all_started_fmt, get_physical_time(), 0);
     fprintf(event_log, log_received_all_started_fmt, get_physical_time(), 0);
     fflush(event_log);
 
@@ -333,7 +336,7 @@ int main(int argc, char *argv[]) {
     for (int i = 1; i < number_of_processes; i++) {
         if (receive(&array_of_processes[0], i, &message) >= 0) { // receive HISTORY from all children
 
-            log(0, "main", "Received i = %d!, type = %d", i, message.s_header.s_type);
+            lg(0, "main", "Received i = %d!, type = %d", i, message.s_header.s_type);
 
             if (message.s_header.s_type == BALANCE_HISTORY) {
 
@@ -345,7 +348,7 @@ int main(int argc, char *argv[]) {
 
     sleep(1);
 
-    log(0, "main", "Received history!");
+    lg(0, "main", "Received history!");
 
     print_history(&allHistory);
 
