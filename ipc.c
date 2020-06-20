@@ -154,26 +154,28 @@ int receive_any(void * self, Message * msg) {
     while (1) {
 
         for (int index_pipe_read = 0; index_pipe_read < number_of_processes; index_pipe_read++) {
-            if(index_pipe_read != processik->localId) {
 
-                int result = read(processik->pipe_read[index_pipe_read], &msg->s_header, sizeof(MessageHeader));
+            if(index_pipe_read == processik->localId) {
+                continue;
+            }
 
-                if (result > 0) {
+            int result = read(processik->pipe_read[index_pipe_read], &msg->s_header, sizeof(MessageHeader));
 
-                    if (read(processik->pipe_read[index_pipe_read], &msg->s_payload, msg->s_header.s_payload_len) >= 0) {
+            if (result > 0) {
 
-                        if (msg->s_header.s_type == TRANSFER) {
-                            //  printf("Receiving : Process %d received from process %d message : %s\n", process->localId, index_pipe_read, "\"TRANSFER\"");
-                        } else if (msg->s_header.s_type == STARTED) {
-                            //printf("Receiving : Process %d received from process %d message : %s\n", process->localId, index_pipe_read, (char *) &msg->s_payload);
-                        } else if (msg->s_header.s_type == DONE) {
-                            //printf("Receiving : Process %d received from process %d message : %s\n", process->localId, index_pipe_read, (char *) &msg->s_payload);
-                        } else if (msg->s_header.s_type == BALANCE_HISTORY) {
-                            printf("Receiving : Process %d received from process %d message : %s\n", processik->localId,
-                                   index_pipe_read, "\"HISTORY\"");
-                        }
-                        return 0;
+                if (read(processik->pipe_read[index_pipe_read], &msg->s_payload, msg->s_header.s_payload_len) >= 0) {
+
+                    if (msg->s_header.s_type == TRANSFER) {
+                        //  printf("Receiving : Process %d received from process %d message : %s\n", process->localId, index_pipe_read, "\"TRANSFER\"");
+                    } else if (msg->s_header.s_type == STARTED) {
+                        //printf("Receiving : Process %d received from process %d message : %s\n", process->localId, index_pipe_read, (char *) &msg->s_payload);
+                    } else if (msg->s_header.s_type == DONE) {
+                        //printf("Receiving : Process %d received from process %d message : %s\n", process->localId, index_pipe_read, (char *) &msg->s_payload);
+                    } else if (msg->s_header.s_type == BALANCE_HISTORY) {
+                        printf("Receiving : Process %d received from process %d message : %s\n", processik->localId, index_pipe_read, "\"HISTORY\"");
                     }
+
+                    return 0;
                 }
             }
         }
