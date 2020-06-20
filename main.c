@@ -49,7 +49,7 @@ static int receive_from_all_children(void * self, Message * msg) {
 
 
 static void create_pipes(process *array_of_processes) {
-    printf("Creating pipes!\n");
+    log(0, "create_pipes", "Creating pipes!");
 
     FILE *pipe_log = fopen("pipes", "a"); // for writing into file
     for (int i = 0; i < number_of_processes; i++) {
@@ -61,7 +61,7 @@ static void create_pipes(process *array_of_processes) {
                 int fd[2];
 
                 if (pipe(fd) < 0) { // fail
-                    printf("Can't create new pipe\n");
+                    log(0, "create_pipes", "Can't create new pipe\n");
                     exit(-1);
                 }
 
@@ -72,7 +72,7 @@ static void create_pipes(process *array_of_processes) {
                 array_of_processes[i].pipe_write[j] = fd[1]; // i write into j
 
 
-                printf("Pipe (read %d, write %d) has OPENED\n", fd[0], fd[1]);
+                log(0,"create_pipes", "Pipe (read %d, write %d) has OPENED", fd[0], fd[1]);
                 fprintf(pipe_log, "Pipe (read %d, write %d) has OPENED\n", fd[0], fd[1]);
                 fflush(pipe_log);
             } else {
