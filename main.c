@@ -120,15 +120,20 @@ static void send_history(process* processik) {
 }
 
 static void update_balance_to_time(process* processik, timestamp_t current_time) {
-        //lg(processik->localId, "update_balance_to_time", "process %d my last amount s_history[%d].s_balance = %d", processik->localId, processik->balance_history.s_history_len - 1, processik->balance_history.s_history[processik->balance_history.s_history_len - 1].s_balance);
+
     for (int time = processik->balance_history.s_history_len; time < current_time + 1; time++) {
         processik->balance_history.s_history[time].s_balance = processik->balance_history.s_history[time - 1].s_balance;
+        processik->balance_history.s_history[time].s_balance_pending_in = processik->balance_history.s_history[time - 1].s_balance_pending_in;
 
-        //lg(processik->localId, "update_balance_to_time","process %d s_history[%d].s_balance = %d", processik->localId, time, processik->balance_history.s_history[time].s_balance);
+//        lg(processik->localId, "update_balance_to_time","s_history[%d]{s_balance = %d, s_balance_pending_in = %d} ",
+//                time,
+//                processik->balance_history.s_history[time].s_balance,
+//                processik->balance_history.s_history[time].s_balance_pending_in);
 
         processik->balance_history.s_history[time].s_time = time;
-        processik->balance_history.s_history_len = current_time + 1;
     }
+    processik->balance_history.s_history_len = current_time + 1;
+
 }
 
 static void change_balances(process* processik, TransferOrder transferOrder, Message* messageFromParent) {
@@ -153,8 +158,7 @@ static void change_balances(process* processik, TransferOrder transferOrder, Mes
         processik->balance_history.s_history[current_time].s_balance += transferOrder.s_amount;
 
         Message message = {.s_header = {.s_type = ACK, .s_magic = MESSAGE_MAGIC},}; // our message, set s_header of Message; set s_type and s_magic of Header
-        sprintf(message.s_payload, log_transfer_in_fmt, get_physical_time(),processik->localId, transferOrder.s_amount, transferOrder.s_src); // data of our message in a buffer, set s_payload of Message
-        message.s_header.s_payload_len = (uint16_t) strlen(message.s_payload) + 1; // set s_payload_len of Header
+        message.s_header.s_payload_len = 0;
 
         send(processik, 0, &message); // sent to Parent that we received Money from s_src (send ACK)
     }
@@ -178,22 +182,17 @@ static void create_processes(process *array_of_processes, FILE * event_log) {
                getppid());
 
             array_of_processes[i].pid = getpid(); // give pid
-            array_of_processes[i].balance_history.s_id = i; // set id of Balance_History
-            array_of_processes[i].balance_history.s_history[i].s_time = get_physical_time(); //set time
-            array_of_processes[i].balance_history.s_history[i].s_balance_pending_in = 0; //set time
-
 
             close_unnecessary_pipes(array_of_processes, array_of_processes[i].localId); // struct is duplicated, we need to close unnecessary pipes!
 
-
             Message message = {.s_header = {.s_type = STARTED, .s_local_time = get_physical_time(), .s_magic = MESSAGE_MAGIC},}; // our message, set s_header of Message; set s_type and s_magic of Header
-            sprintf(message.s_payload, log_started_fmt, get_physical_time(), array_of_processes[i].localId, array_of_processes[i].pid, getppid(), array_of_processes[i].balance_history.s_history->s_balance); // data of our message in a buffer, set s_payload of Message
+            sprintf(message.s_payload, log_started_fmt, get_physical_time(), array_of_processes[i].localId, array_of_processes[i].pid, getppid(), array_of_processes[i].balance_history.s_history[0].s_balance); // data of our message in a buffer, set s_payload of Message
             message.s_header.s_payload_len = (uint16_t) strlen(message.s_payload) + 1; // set s_payload_len of Header
 
             send_multicast(&array_of_processes[i], &message);
 
             // print
-            fprintf(event_log, log_started_fmt, get_physical_time(), i, getpid(), getppid(), array_of_processes[i].balance_history.s_history->s_balance);
+            fprintf(event_log, log_started_fmt, get_physical_time(), i, getpid(), getppid(), array_of_processes[i].balance_history.s_history[0].s_balance);
             fflush(event_log);
 
             receive_from_all_children(&array_of_processes[i], &message); // receive all STARTED
@@ -203,12 +202,11 @@ static void create_processes(process *array_of_processes, FILE * event_log) {
             fprintf(event_log, log_received_all_started_fmt, get_physical_time(), i);
             fflush(event_log);
 
-            int in_cycle = 1;
-            while(in_cycle == 1) {
+            int done = 0;
+            while(done < number_of_processes - 1) {
 
                 memset(message.s_payload, 0, message.s_header.s_payload_len);
                 receive_any(&array_of_processes[i], &message); // receive (at first step) TRANSFER from Parent
-
 
                 if (message.s_header.s_type == TRANSFER) {
 
@@ -225,27 +223,19 @@ static void create_processes(process *array_of_processes, FILE * event_log) {
                     sprintf(message.s_payload, log_done_fmt, get_physical_time(), array_of_processes[i].localId, array_of_processes[i].balance_history.s_history[array_of_processes[i].balance_history.s_history_len - 1].s_balance ); // data of our message in a buffer, set s_payload of Message
                     message.s_header.s_payload_len = (uint16_t) strlen(message.s_payload) + 1; // set s_payload_len of Header
 
-
                     update_balance_to_time(&array_of_processes[i], get_physical_time()); // need to update time!
-
 
                     send_multicast(&array_of_processes[i], &message); // send all DONE
 
-                    receive_from_all_children(&array_of_processes[i], &message); // receive all DONE
-
-
-                    send_history(&array_of_processes[i]);
-
-
-                    in_cycle = -1;
-
+                    done++;
+                } else if (message.s_header.s_type == DONE) {
+                    done++;
                 }
 
             }
+            send_history(&array_of_processes[i]);
 
-            sleep(10);
             lg(array_of_processes[i].localId, "create_processes", "process %d exit!", array_of_processes[i].localId);
-
 
             exit(0);
         }
@@ -294,6 +284,9 @@ int main(int argc, char *argv[]) {
         array_of_processes[i].pipe_write = (int *) malloc(sizeof(int) * number_of_processes); // initialize our array
 
         array_of_processes[i].balance_history.s_history[0].s_balance = balances[i]; // put start balance
+        array_of_processes[i].balance_history.s_history[0].s_time = get_physical_time(); // put start time
+        array_of_processes[i].balance_history.s_history[0].s_balance_pending_in = 0; // put start balance_in_pending
+        array_of_processes[i].balance_history.s_id = i;
         array_of_processes[i].balance_history.s_history_len = 1; // put start balance
     }
 
@@ -332,21 +325,19 @@ int main(int argc, char *argv[]) {
 
 
     AllHistory allHistory;
-    allHistory.s_history_len = number_of_processes - 1; // number of children
+    allHistory.s_history_len = 0;
     for (int i = 1; i < number_of_processes; i++) {
         if (receive(&array_of_processes[0], i, &message) >= 0) { // receive HISTORY from all children
 
-            lg(0, "main", "Received i = %d!, type = %d", i, message.s_header.s_type);
-
             if (message.s_header.s_type == BALANCE_HISTORY) {
-
                 memcpy(&allHistory.s_history[i - 1], message.s_payload, message.s_header.s_payload_len);
+                allHistory.s_history_len++;
+                //print_history(&allHistory);
+            } else {
+                perror("unexpected message");
             }
-
         }
     }
-
-    sleep(1);
 
     lg(0, "main", "Received history!");
 
@@ -363,5 +354,4 @@ int main(int argc, char *argv[]) {
 
     close_all_pipes(array_of_processes);
 }
-
 

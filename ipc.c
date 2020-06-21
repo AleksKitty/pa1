@@ -2,9 +2,7 @@
 // Created by alex on 13.06.2020.
 //
 #include <stdio.h>
-#include <stdarg.h>
 #include <unistd.h>
-#include <sys/types.h>
 
 #include "ipc.h"
 #include "log.h"
@@ -19,6 +17,53 @@ typedef struct {
 
 
 int number_of_processes;
+
+static int has_printable_payload(MessageType msgType) {
+    switch (msgType) {
+        case STARTED:
+        case DONE:
+            return 1;
+        default:
+            return 0;
+    }
+}
+
+static const char* get_msg_type_name(MessageType msgType) {
+    switch (msgType) {
+        case STARTED:
+            return "STARTED";
+        case DONE:
+            return "DONE";
+        case ACK:
+            return "ACK";
+        case STOP:
+            return "STOP";
+        case TRANSFER:
+            return "TRANSFER";
+        case BALANCE_HISTORY:
+            return "BALANCE_HISTORY";
+        case CS_REQUEST:
+            return "CS_REQUEST";
+        case CS_REPLY:
+            return "CS_REPLY";
+        case CS_RELEASE:
+            return "CS_RELEASE";
+        default:
+            return "unknown";
+    }
+}
+
+static void lg_msg(pid_t p, const char * f, const Message *msg, local_id src, local_id dst) {
+    const MessageHeader* h = &msg->s_header;
+    const char * type = get_msg_type_name(h->s_type);
+    if (h->s_payload_len > 0 && has_printable_payload(h->s_type)) {
+        const char * m = "src = %d; dst = %d; type = %s; payload-size = %d; payload = %s";
+        lg(p, f, m, src, dst, type, h->s_payload_len, msg->s_payload);
+    } else {
+        const char * m = "src = %d; dst = %d; message = %s; payload-size = %d";
+        lg(p, f, m, src, dst, type, h->s_payload_len);
+    }
+}
 
 //------------------------------------------------------------------------------
 /** Send a message to the process specified by id.
@@ -35,27 +80,13 @@ int send(void *self, local_id dst, const Message *msg) {
 
     int fd = sender->pipe_write[dst];
 
+    lg_msg(sender->localId, "send", msg, sender->localId, dst);
+
     if (write(fd, msg, sizeof(MessageHeader) + msg->s_header.s_payload_len) == -1) {
         perror("Error\n");
         return -1;
     }
 
-    if (msg->s_header.s_type == TRANSFER) {
-        lg(sender->localId, "send", "Sending : process %d sent to process %d message: %s", sender->localId, dst,
-           "\"TRANSFER\"");
-    } else if (msg->s_header.s_type == ACK) {
-        lg(sender->localId, "send", "Sending : process %d sent to process %d message: %s", sender->localId, dst,
-           (char *) msg->s_payload);
-    } else if (msg->s_header.s_type == STOP) {
-        lg(sender->localId, "send", "Sending : process %d sent to process %d message: %s", sender->localId, dst,
-           "\"STOP\"");
-    } else if ( msg->s_header.s_type == DONE) {
-        lg(sender->localId, "send", "Sending : process %d sent to process %d message: %s", sender->localId, dst,
-           (char *) msg->s_payload);
-    } else if ( msg->s_header.s_type == BALANCE_HISTORY) {
-        lg(sender->localId, "send", "Sending : process %d sent to process %d message: %s", sender->localId, dst,
-           "\"HISTORY\"");
-    }
     return 0;
 }
 
@@ -95,7 +126,7 @@ int send_multicast(void * self, const Message * msg) {
  * @param from    ID of the process to receive message from
  * @param msg     Message structure allocated by the caller
  *
- * @return 0 on success, any non-zero value on error
+ * @return  1 on success, -1 on error
  */
 int receive(void * self, local_id from, Message * msg) {
     process *receiver = self;
@@ -103,43 +134,18 @@ int receive(void * self, local_id from, Message * msg) {
     int fd = receiver->pipe_read[from]; // where exactly we are sending!
 
     while (1) {
-        int read_result = read(fd, &msg->s_header, sizeof(MessageHeader));
-        lg(receiver->localId, "receive", "read_header_res = %d", read_result);
+        int read_header_res = read(fd, &msg->s_header, sizeof(MessageHeader));
+        lg(receiver->localId, "receive", "read_header_res = %d from %d", read_header_res, from);
 
-        if (read_result > 0) {
+        if (read_header_res > 0) {
+            lg(receiver->localId, "receive", "s_payload_len = %d from %d", msg->s_header.s_payload_len, from);
 
-            while (1) {
-                int result = read(fd, &msg->s_payload, msg->s_header.s_payload_len);
-                lg(receiver->localId, "receive", "read_msg_res = %d", result);
-                if (result >= 0) {
-
-                    if (msg->s_header.s_type == TRANSFER) {
-                        lg(receiver->localId, "receive", "Process %d received from process %d message : %s",
-                           receiver->localId, from, "\"TRANSFER\"");
-                    } else if (msg->s_header.s_type == STARTED) {
-                        lg(receiver->localId, "receive", "Process %d received from process %d message : %s",
-                           receiver->localId,
-                           from, (char *) &msg->s_payload);
-                    } else if (msg->s_header.s_type == BALANCE_HISTORY) {
-                        lg(receiver->localId, "receive", "Process %d received from process %d message : %s",
-                           receiver->localId,
-                           from, "\"HISTORY\"");
-                    } else if (msg->s_header.s_type == DONE) {
-                        lg(receiver->localId, "receive", "Process %d received from process %d message : %s",
-                           receiver->localId,
-                           from, (char *) &msg->s_payload);
-                    } else if (msg->s_header.s_type == ACK) {
-                        lg(receiver->localId, "receive", "Process %d received from process %d message : %s",
-                           receiver->localId,
-                           from, "\"ACK\"");
-                    }
-
-                    return result;
-
-                } else {
-                    sleep(1);
-                }
+            if (msg->s_header.s_payload_len > 0) {
+                int read_payload_res = read(fd, &msg->s_payload, msg->s_header.s_payload_len);
+                lg(receiver->localId, "receive", "read_payload_res = %d from %d", read_payload_res, from);
             }
+            lg_msg(receiver->localId, "receive", msg, from, receiver->localId);
+            return 1;
         } else {
             sleep(1);
         }
@@ -157,7 +163,7 @@ int receive(void * self, local_id from, Message * msg) {
  * @param self    Any data structure implemented by students to perform I/O
  * @param msg     Message structure allocated by the caller
  *
- * @return 0 on success, any non-zero value on error
+ * @return 1 on success, -1 on error
  */
 int receive_any(void * self, Message * msg) {
     process *processik = self;
@@ -170,41 +176,24 @@ int receive_any(void * self, Message * msg) {
                 continue;
             }
 
-            int result = read(processik->pipe_read[index_pipe_read], &msg->s_header, sizeof(MessageHeader));
+            int read_header_res = read(processik->pipe_read[index_pipe_read], &msg->s_header, sizeof(MessageHeader));
 
-            lg(processik->localId, "receive_any", "read_header_res = %d", result);
+            lg(processik->localId, "receive_any", "read_header_res = %d from %d", read_header_res, index_pipe_read);
 
-            if (result > 0) {
+            if (read_header_res > 0) {
+                lg(processik->localId, "receive_any", "s_payload_len = %d from %d", msg->s_header.s_payload_len, index_pipe_read);
 
-                if (read(processik->pipe_read[index_pipe_read], &msg->s_payload, msg->s_header.s_payload_len) >= 0) {
-
-                    if (msg->s_header.s_type == TRANSFER) {
-                        lg(processik->localId, "receive_any", "Process %d received from process %d message : %s",
-                           processik->localId, processik->pipe_read[index_pipe_read], "\"TRANSFER\"");
-                    } else if (msg->s_header.s_type == STARTED) {
-                        lg(processik->localId, "receive_any", "Process %d received from process %d message : %s",
-                           processik->localId,
-                           processik->pipe_read[index_pipe_read], (char *) &msg->s_payload);
-                    } else if (msg->s_header.s_type == BALANCE_HISTORY) {
-                        lg(processik->localId, "receive_any", "Process %d received from process %d message : %s",
-                           processik->localId,
-                           processik->pipe_read[index_pipe_read], "\"HISTORY\"");
-                    } else if (msg->s_header.s_type == DONE) {
-                        lg(processik->localId, "receive_any", "Process %d received from process %d message : %s",
-                           processik->localId,
-                           processik->pipe_read[index_pipe_read], (char *) &msg->s_payload);
-                    } else if (msg->s_header.s_type == ACK) {
-                        lg(processik->localId, "receive_any", "Process %d received from process %d message : %s",
-                           processik->localId,
-                           processik->pipe_read[index_pipe_read], "\"ACK\"");
-                    }
-
-                    return 0;
+                if (msg->s_header.s_payload_len > 0) {
+                    int read_payload_res = read(processik->pipe_read[index_pipe_read], &msg->s_payload, msg->s_header.s_payload_len);
+                    lg(processik->localId, "receive_any", "read_payload_res = %d from %d", read_payload_res, index_pipe_read);
                 }
+                lg_msg(processik->localId, "receive_any", msg, index_pipe_read, processik->localId);
+                return 1;
+            } else {
+                sleep(1);
             }
         }
     }
 }
-
 
 
