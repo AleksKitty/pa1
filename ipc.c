@@ -6,12 +6,15 @@
 
 #include "ipc.h"
 #include "log.h"
+#include "banking.h"
 
 typedef struct {
     pid_t pid; // special id for processes
     local_id localId; // id from ipc.h
     int *pipe_read; // who we need to READ from
     int *pipe_write; // who we need to WRITE into
+    BalanceHistory balance_history; // struct for money and time of our process (Parent doesn't have money)
+    timestamp_t local_time;
 }  process;
 
 
@@ -64,6 +67,26 @@ static void lg_msg(pid_t p, const char * f, const Message *msg, local_id src, lo
         lg(p, f, m, src, dst, type, h->s_payload_len);
     }
 }
+
+//static int msg_logic(process* receiver, Message * msg, int fd, int from, char * f) {
+//
+//    int read_header_res = read(fd, &msg->s_header, sizeof(MessageHeader));
+//    lg(receiver->localId, f, "read_header_res = %d from %d", read_header_res, from);
+//
+//    if (read_header_res > 0) {
+//        lg(receiver->localId, f, "s_payload_len = %d from %d", msg->s_header.s_payload_len, from);
+//
+//        if (msg->s_header.s_payload_len > 0) {
+//            int read_payload_res = read(fd, &msg->s_payload, msg->s_header.s_payload_len);
+//            lg(receiver->localId, f, "read_payload_res = %d from %d", read_payload_res, from);
+//        }
+//        lg_msg(receiver->localId, f, msg, from, receiver->localId);
+//        return 0;
+//    } else {
+//        sleep(1);
+//    }
+//}
+
 
 //------------------------------------------------------------------------------
 /** Send a message to the process specified by id.
@@ -126,7 +149,7 @@ int send_multicast(void * self, const Message * msg) {
  * @param from    ID of the process to receive message from
  * @param msg     Message structure allocated by the caller
  *
- * @return  1 on success, -1 on error
+ * @return  0 on success, -1 on error
  */
 int receive(void * self, local_id from, Message * msg) {
     process *receiver = self;
@@ -145,7 +168,7 @@ int receive(void * self, local_id from, Message * msg) {
                 lg(receiver->localId, "receive", "read_payload_res = %d from %d", read_payload_res, from);
             }
             lg_msg(receiver->localId, "receive", msg, from, receiver->localId);
-            return 1;
+            return 0;
         } else {
             sleep(1);
         }
@@ -163,7 +186,7 @@ int receive(void * self, local_id from, Message * msg) {
  * @param self    Any data structure implemented by students to perform I/O
  * @param msg     Message structure allocated by the caller
  *
- * @return 1 on success, -1 on error
+ * @return 0 on success, -1 on error
  */
 int receive_any(void * self, Message * msg) {
     process *processik = self;
@@ -188,7 +211,7 @@ int receive_any(void * self, Message * msg) {
                     lg(processik->localId, "receive_any", "read_payload_res = %d from %d", read_payload_res, index_pipe_read);
                 }
                 lg_msg(processik->localId, "receive_any", msg, index_pipe_read, processik->localId);
-                return 1;
+                return 0;
             } else {
                 sleep(1);
             }

@@ -22,6 +22,7 @@ typedef struct {
     int *pipe_read; // who we need to READ from
     int *pipe_write; // who we need to WRITE into
     BalanceHistory balance_history; // struct for money and time of our process (Parent doesn't have money)
+    timestamp_t local_time;
 }  process;
 
 
@@ -284,7 +285,7 @@ int main(int argc, char *argv[]) {
         array_of_processes[i].pipe_write = (int *) malloc(sizeof(int) * number_of_processes); // initialize our array
 
         array_of_processes[i].balance_history.s_history[0].s_balance = balances[i]; // put start balance
-        array_of_processes[i].balance_history.s_history[0].s_time = get_physical_time(); // put start time
+        array_of_processes[i].balance_history.s_history[0].s_time = 0; // put start time
         array_of_processes[i].balance_history.s_history[0].s_balance_pending_in = 0; // put start balance_in_pending
         array_of_processes[i].balance_history.s_id = i;
         array_of_processes[i].balance_history.s_history_len = 1; // put start balance
@@ -327,12 +328,11 @@ int main(int argc, char *argv[]) {
     AllHistory allHistory;
     allHistory.s_history_len = 0;
     for (int i = 1; i < number_of_processes; i++) {
-        if (receive(&array_of_processes[0], i, &message) >= 0) { // receive HISTORY from all children
+        if (receive(&array_of_processes[0], i, &message) == 0) { // receive HISTORY from all children
 
             if (message.s_header.s_type == BALANCE_HISTORY) {
                 memcpy(&allHistory.s_history[i - 1], message.s_payload, message.s_header.s_payload_len);
                 allHistory.s_history_len++;
-                //print_history(&allHistory);
             } else {
                 perror("unexpected message");
             }
