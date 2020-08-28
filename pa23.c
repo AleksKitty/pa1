@@ -1,21 +1,11 @@
-#include <stdio.h>
 #include <string.h>
-#include <stdlib.h>
-#include <unistd.h>
 #include <sys/types.h>
-#include <sys/wait.h>
+
 
 #include "banking.h"
 #include "ipc.h"
-#include "pa2345.h"
+#include "lamport.h"
 
-typedef struct {
-    pid_t pid; // special id for processes
-    local_id localId; // id from ipc.h
-    int *pipe_read; // who we need to READ from
-    int *pipe_write; // who we need to WRITE into
-    balance_t balance; // amount of money of our process (Parent doesn't have money (balance = 0))
-}  process;
 
 // sending and receiving Message with MONEY from one process to another
 void transfer(void * parent_data, local_id src, local_id dst, balance_t amount){
@@ -23,7 +13,10 @@ void transfer(void * parent_data, local_id src, local_id dst, balance_t amount){
 
     process *parent_process = parent_data;
 
-    Message message = {.s_header = {.s_type = TRANSFER, .s_local_time = get_physical_time(), .s_magic = MESSAGE_MAGIC},}; // our message, set s_header of Message; set s_type and s_magic of Header
+    // First rule: update time before send or receive event (time = time + 1)
+    parent_process->balance_history.s_history->s_time++;
+
+    Message message = {.s_header = {.s_type = TRANSFER, .s_local_time = get_lamport_time(parent_process), .s_magic = MESSAGE_MAGIC},}; // our message, set s_header of Message; set s_type and s_magic of Header
 
     TransferOrder transferOrder = {src, dst, amount}; // what we will put in a buffer of Message
 
@@ -32,7 +25,13 @@ void transfer(void * parent_data, local_id src, local_id dst, balance_t amount){
 
 
     send(parent_process, src, &message); // send TRANSFER
-    receive(parent_process, dst, &message); // receive ACK for PARENT
-}
 
+
+    // First rule: update time before send or receive event (time = time + 1)
+    parent_process->balance_history.s_history->s_time++;
+
+    receive(parent_process, dst, &message); // receive ACK for PARENT
+
+    doSecondRule(parent_process, message.s_header.s_local_time);
+}
 
