@@ -16,7 +16,7 @@ void transfer(void * parent_data, local_id src, local_id dst, balance_t amount){
     // First rule: update time before send or receive event (time = time + 1)
     parent_process->balance_history.s_history->s_time++;
 
-    Message message = {.s_header = {.s_type = TRANSFER, .s_local_time = get_lamport_time(parent_process), .s_magic = MESSAGE_MAGIC},}; // our message, set s_header of Message; set s_type and s_magic of Header
+    Message message = {.s_header = {.s_type = TRANSFER, .s_local_time = parent_process->lamport_time, .s_magic = MESSAGE_MAGIC},}; // our message, set s_header of Message; set s_type and s_magic of Header
 
     TransferOrder transferOrder = {src, dst, amount}; // what we will put in a buffer of Message
 

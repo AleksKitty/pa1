@@ -111,7 +111,7 @@ static void close_all_pipes(process array_of_processes[]) {
 
 static void send_history(process* processik) {
 
-    Message message = {.s_header = {.s_type = BALANCE_HISTORY, .s_local_time = get_lamport_time(processik), .s_magic = MESSAGE_MAGIC},}; // our message, set s_header of Message; set s_type and s_magic of Header
+    Message message = {.s_header = {.s_type = BALANCE_HISTORY, .s_local_time = processik->lamport_time, .s_magic = MESSAGE_MAGIC},}; // our message, set s_header of Message; set s_type and s_magic of Header
 
     message.s_header.s_payload_len = (uint16_t) sizeof(BalanceHistory) + sizeof(BalanceState) * processik->balance_history.s_history_len; // set s_payload_len of Header
 
@@ -137,8 +137,8 @@ static void update_balance_to_time(process* processik, timestamp_t current_time)
 
 }
 
-static void change_balances(process* processik, TransferOrder transferOrder, Message* messageFromParent) {
-    timestamp_t current_time = get_lamport_time(processik);
+static void change_balances(process* processik, TransferOrder transferOrder, Message* message) {
+    timestamp_t current_time = processik->lamport_time;
 
 
     lg(processik->localId, "change_balances", "process %d AFTER s_history_len = %d", processik->localId,
@@ -157,9 +157,9 @@ static void change_balances(process* processik, TransferOrder transferOrder, Mes
         // First rule: update time before send or receive (time = time + 1)
         processik->lamport_time++;
 
-        messageFromParent->s_header.s_local_time = get_lamport_time(processik);
+        message->s_header.s_local_time = processik->lamport_time;
 
-        send(processik, transferOrder.s_dst, messageFromParent); // sent to another process message from Parent (money)
+        send(processik, transferOrder.s_dst, message); // sent to another process message from Parent (money)
 
     } else if (transferOrder.s_dst == processik->localId) {
         processik->balance_history.s_history[current_time].s_balance += transferOrder.s_amount;
@@ -168,20 +168,20 @@ static void change_balances(process* processik, TransferOrder transferOrder, Mes
            transferOrder.s_amount);
 
 
+        for (timestamp_t i = message->s_header.s_local_time; i < processik->lamport_time; i++) {
+            processik->balance_history.s_history[i].s_balance_pending_in += transferOrder.s_amount;
+        }
+
+
         // First rule: update time before send or receive (time = time + 1)
         processik->lamport_time++;
 
-        Message message = {.s_header = {.s_type = ACK, .s_local_time = get_lamport_time(processik), .s_magic = MESSAGE_MAGIC},}; // our message, set s_header of Message; set s_type and s_magic of Header
-        message.s_header.s_payload_len = 0;
+        Message msg = {.s_header = {.s_type = ACK, .s_local_time = processik->lamport_time, .s_magic = MESSAGE_MAGIC},}; // our message, set s_header of Message; set s_type and s_magic of Header
+        msg.s_header.s_payload_len = 0;
 
 
-        send(processik, 0, &message); // sent to Parent that we received Money from s_src (send ACK)
+        send(processik, 0, &msg); // sent to Parent that we received Money from s_src (send ACK)
     }
-}
-
-timestamp_t get_lamport_time(process* process) {
-
-    return process->lamport_time;
 }
 
 
@@ -209,8 +209,8 @@ static void create_processes(process *array_of_processes, FILE * event_log) {
             array_of_processes[i].lamport_time++;
 
 
-            Message message = {.s_header = {.s_type = STARTED, .s_local_time = get_lamport_time(&array_of_processes[i]), .s_magic = MESSAGE_MAGIC},}; // our message, set s_header of Message; set s_type and s_magic of Header
-            sprintf(message.s_payload, log_started_fmt, get_lamport_time(&array_of_processes[i]), array_of_processes[i].localId, array_of_processes[i].pid, getppid(), array_of_processes[i].balance_history.s_history[0].s_balance); // data of our message in a buffer, set s_payload of Message
+            Message message = {.s_header = {.s_type = STARTED, .s_local_time = array_of_processes[i].lamport_time, .s_magic = MESSAGE_MAGIC},}; // our message, set s_header of Message; set s_type and s_magic of Header
+            sprintf(message.s_payload, log_started_fmt, array_of_processes[i].lamport_time, array_of_processes[i].localId, array_of_processes[i].pid, getppid(), array_of_processes[i].balance_history.s_history[0].s_balance); // data of our message in a buffer, set s_payload of Message
             message.s_header.s_payload_len = (uint16_t) strlen(message.s_payload) + 1; // set s_payload_len of Header
 
             send_multicast(&array_of_processes[i], &message);
@@ -219,14 +219,13 @@ static void create_processes(process *array_of_processes, FILE * event_log) {
             array_of_processes[i].lamport_time++;
 
             // print
-            fprintf(event_log, log_started_fmt, get_lamport_time(&array_of_processes[i]), i, getpid(), getppid(), array_of_processes[i].balance_history.s_history[0].s_balance);
+            fprintf(event_log, log_started_fmt, array_of_processes[i].lamport_time, i, getpid(), getppid(), array_of_processes[i].balance_history.s_history[0].s_balance);
             fflush(event_log);
 
             receive_from_all_children(&array_of_processes[i], &message); // receive all STARTED
 
             // print
-            //lg(array_of_processes[i].localId, "create_processes", log_received_all_started_fmt, get_physical_time(), i);
-            fprintf(event_log, log_received_all_started_fmt, get_lamport_time(&array_of_processes[i]), i);
+            fprintf(event_log, log_received_all_started_fmt, array_of_processes[i].lamport_time, i);
             fflush(event_log);
 
             int done = 0;
@@ -247,7 +246,7 @@ static void create_processes(process *array_of_processes, FILE * event_log) {
 
                     TransferOrder transferOrder;
 
-                    update_balance_to_time(&array_of_processes[i], get_lamport_time(&array_of_processes[i])); // need to update time!
+                    update_balance_to_time(&array_of_processes[i], array_of_processes[i].lamport_time); // need to update time!
 
                     memcpy(&transferOrder, message.s_payload, message.s_header.s_payload_len); // get transferOrder from message buffer (memcpy = copy)
                     change_balances(&array_of_processes[i], transferOrder, &message);
@@ -257,12 +256,12 @@ static void create_processes(process *array_of_processes, FILE * event_log) {
                     // First rule: update time before send or receive (time = time + 1)
                     array_of_processes[i].lamport_time++;
 
-                    update_balance_to_time(&array_of_processes[i], get_lamport_time(&array_of_processes[i])); // need to update time!
+                    update_balance_to_time(&array_of_processes[i], array_of_processes[i].lamport_time); // need to update time!
 
                     // send DONE
                     message.s_header.s_type = DONE;
-                    message.s_header.s_local_time = get_lamport_time(&array_of_processes[i]);
-                    sprintf(message.s_payload, log_done_fmt, get_lamport_time(&array_of_processes[i]), array_of_processes[i].localId, array_of_processes[i].balance_history.s_history[array_of_processes[i].balance_history.s_history_len - 1].s_balance ); // data of our message in a buffer, set s_payload of Message
+                    message.s_header.s_local_time = array_of_processes[i].lamport_time;
+                    sprintf(message.s_payload, log_done_fmt, array_of_processes[i].lamport_time, array_of_processes[i].localId, array_of_processes[i].balance_history.s_history[array_of_processes[i].balance_history.s_history_len - 1].s_balance ); // data of our message in a buffer, set s_payload of Message
                     message.s_header.s_payload_len = (uint16_t) strlen(message.s_payload) + 1; // set s_payload_len of Header
 
 
@@ -277,7 +276,7 @@ static void create_processes(process *array_of_processes, FILE * event_log) {
             // First rule: update time before send or receive (time = time + 1)
             array_of_processes[i].lamport_time++;
 
-            update_balance_to_time(&array_of_processes[i], get_lamport_time(&array_of_processes[i])); // need to update time!
+            update_balance_to_time(&array_of_processes[i], array_of_processes[i].lamport_time); // need to update time!
 
             send_history(&array_of_processes[i]);
 
@@ -357,10 +356,12 @@ int main(int argc, char *argv[]) {
     receive_from_all_children(&array_of_processes[0], &message); // receive STARTED for PARENT GOOD!
 
     // print
-    lg(0, "main", log_received_all_started_fmt, get_lamport_time(&array_of_processes[0]), 0);
-    fprintf(event_log, log_received_all_started_fmt, get_lamport_time(&array_of_processes[0]), 0);
+    lg(0, "main", log_received_all_started_fmt, array_of_processes[0].lamport_time, 0);
+    fprintf(event_log, log_received_all_started_fmt, array_of_processes[0].lamport_time, 0);
     fflush(event_log);
 
+    // First rule: update time before send or receive event (time = time + 1)
+    array_of_processes[0].lamport_time++;
 
     bank_robbery(&array_of_processes[0], number_of_processes - 1); // parent and number of children sending many TRANSFER
 
@@ -370,7 +371,7 @@ int main(int argc, char *argv[]) {
 
     // send STOP
     message.s_header.s_type = STOP;
-    message.s_header.s_local_time = get_lamport_time(&array_of_processes[0]);
+    message.s_header.s_local_time = array_of_processes[0].lamport_time;
     message.s_header.s_payload_len = 0; // set s_payload_len of Header
     send_multicast(&array_of_processes[0], &message);
 
@@ -379,19 +380,19 @@ int main(int argc, char *argv[]) {
 
     receive_from_all_children(&array_of_processes[0], &message); // receive all DONE for PARENT
 
-    // First rule: update time before any event (time = time + 1)
-    array_of_processes[0].lamport_time++;
 
     AllHistory allHistory;
     allHistory.s_history_len = 0;
     for (int i = 1; i < number_of_processes; i++) {
         if (receive(&array_of_processes[0], i, &message) >= 0) { // receive HISTORY from all children
 
+            doSecondRule(&array_of_processes[0], message.s_header.s_local_time);
+
             if (message.s_header.s_type == BALANCE_HISTORY) {
+
                 memcpy(&allHistory.s_history[i - 1], message.s_payload, message.s_header.s_payload_len);
                 allHistory.s_history_len++;
                 //print_history(&allHistory);
-                doSecondRule(&array_of_processes[0], message.s_header.s_local_time);
             } else {
                 perror("unexpected message");
             }

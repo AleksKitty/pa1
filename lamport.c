@@ -11,7 +11,7 @@
 //
 void doSecondRule(process * process_receiver, timestamp_t msg_time) {
 
-    if(get_lamport_time(&process_receiver) < msg_time) {
+    if(process_receiver->lamport_time < msg_time) {
         process_receiver->lamport_time = msg_time;
     }
 
