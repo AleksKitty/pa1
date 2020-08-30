@@ -56,12 +56,12 @@ static const char* get_msg_type_name(MessageType msgType) {
     }
 }
 
-static void lg_msg(pid_t p, const char * f, const Message *msg, local_id src, local_id dst, timestamp_t time) {
+static void lg_msg(pid_t p, const char * f, const Message *msg, local_id src, local_id dst) {
     const MessageHeader* h = &msg->s_header;
     const char * type = get_msg_type_name(h->s_type);
     if (h->s_payload_len > 0 && has_printable_payload(h->s_type)) {
-        const char * m = "src = %d; dst = %d; type = %s; payload-size = %d; payload = %s; time = %d";
-        lg(p, f, m, src, dst, type, h->s_payload_len, msg->s_payload, time);
+        const char * m = "src = %d; dst = %d; type = %s; payload-size = %d; payload = %s";
+        lg(p, f, m, src, dst, type, h->s_payload_len, msg->s_payload);
     } else {
         const char * m = "src = %d; dst = %d; message = %s; payload-size = %d";
         lg(p, f, m, src, dst, type, h->s_payload_len);
@@ -83,7 +83,7 @@ int send(void *self, local_id dst, const Message *msg) {
 
     int fd = sender->pipe_write[dst];
 
-    lg_msg(sender->localId, "send", msg, sender->localId, dst, sender->lamport_time);
+    lg_msg(sender->localId, "send", msg, sender->localId, dst);
 
     if (write(fd, msg, sizeof(MessageHeader) + msg->s_header.s_payload_len) == -1) {
         perror("Error\n");
@@ -147,7 +147,7 @@ int receive(void * self, local_id from, Message * msg) {
                 int read_payload_res = read(fd, &msg->s_payload, msg->s_header.s_payload_len);
                 lg(receiver->localId, "receive", "read_payload_res = %d from %d", read_payload_res, from);
             }
-            lg_msg(receiver->localId, "receive", msg, from, receiver->localId, receiver->lamport_time);
+            lg_msg(receiver->localId, "receive", msg, from, receiver->localId);
             return 1;
         } else {
             sleep(1);
@@ -190,7 +190,7 @@ int receive_any(void * self, Message * msg) {
                     int read_payload_res = read(processik->pipe_read[index_pipe_read], &msg->s_payload, msg->s_header.s_payload_len);
                     lg(processik->localId, "receive_any", "read_payload_res = %d from %d", read_payload_res, index_pipe_read);
                 }
-                lg_msg(processik->localId, "receive_any", msg, index_pipe_read, processik->localId, processik->lamport_time);
+                lg_msg(processik->localId, "receive_any", msg, index_pipe_read, processik->localId);
                 return 1;
             } else {
                 sleep(1);

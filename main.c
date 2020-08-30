@@ -168,13 +168,13 @@ static void change_balances(process* processik, TransferOrder transferOrder, Mes
            transferOrder.s_amount);
 
 
-        for (timestamp_t i = message->s_header.s_local_time; i < processik->lamport_time; i++) {
+        for (timestamp_t i = message->s_header.s_local_time - 1; i < processik->lamport_time; i++) {
             processik->balance_history.s_history[i].s_balance_pending_in += transferOrder.s_amount;
         }
 
-
         // First rule: update time before send or receive (time = time + 1)
         processik->lamport_time++;
+
 
         Message msg = {.s_header = {.s_type = ACK, .s_local_time = processik->lamport_time, .s_magic = MESSAGE_MAGIC},}; // our message, set s_header of Message; set s_type and s_magic of Header
         msg.s_header.s_payload_len = 0;
@@ -280,7 +280,7 @@ static void create_processes(process *array_of_processes, FILE * event_log) {
 
             send_history(&array_of_processes[i]);
 
-            lg(array_of_processes[i].localId, "create_processes", "process %d exit!", array_of_processes[i].localId);
+            lg(array_of_processes[i].localId, "create_processes", "process %d exit with time = %d!", array_of_processes[i].localId, array_of_processes[i].lamport_time);
 
             exit(0);
         }
