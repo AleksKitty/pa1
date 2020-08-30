@@ -1,6 +1,9 @@
 //
 // Created by alex on 13.06.2020.
 //
+
+#define _XOPEN_SOURCE 500
+
 #include <stdio.h>
 #include <unistd.h>
 
@@ -146,13 +149,10 @@ int receive(void * self, local_id from, Message * msg) {
             if (msg->s_header.s_payload_len > 0) {
                 int read_payload_res = read(fd, &msg->s_payload, msg->s_header.s_payload_len);
 
-                // print
-                if (read_payload_res > -1) {
-                    lg(receiver->localId, "receive", "read_payload_res = %d from %d", read_payload_res, from);
-                    lg_msg(receiver->localId, "receive", msg, from, receiver->localId);
-                }
+                lg(receiver->localId, "receive", "read_payload_res = %d from %d", read_payload_res, from);
             }
-            //lg_msg(receiver->localId, "receive", msg, from, receiver->localId);
+
+            lg_msg(receiver->localId, "receive", msg, from, receiver->localId);
             return 1;
         } else {
             sleep(1);
@@ -193,12 +193,20 @@ int receive_any(void * self, Message * msg) {
 
                 if (msg->s_header.s_payload_len > 0) {
                     int read_payload_res = read(processik->pipe_read[index_pipe_read], &msg->s_payload, msg->s_header.s_payload_len);
+
+                    if (read_payload_res == -1) {
+                        usleep(100);
+                        read_payload_res = read(processik->pipe_read[index_pipe_read], &msg->s_payload, msg->s_header.s_payload_len);
+                    }
+
+
                     lg(processik->localId, "receive_any", "read_payload_res = %d from %d", read_payload_res, index_pipe_read);
                 }
                 lg_msg(processik->localId, "receive_any", msg, index_pipe_read, processik->localId);
                 return 1;
             } else {
-                sleep(1);
+                usleep(500);
+                //nanosleep((const struct timespec[]) {{0, 100000L}}, NULL);
             }
         }
     }
