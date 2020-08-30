@@ -7,9 +7,6 @@
 #ifndef PA1_LOG_H
 #define PA1_LOG_H
 
-// for usleep
-#define _BSD_SOURCE
-
 #endif //PA1_LOG_H
 
 
