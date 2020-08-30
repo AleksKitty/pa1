@@ -138,16 +138,21 @@ int receive(void * self, local_id from, Message * msg) {
 
     while (1) {
         int read_header_res = read(fd, &msg->s_header, sizeof(MessageHeader));
-        lg(receiver->localId, "receive", "read_header_res = %d from %d", read_header_res, from);
+       // lg(receiver->localId, "receive", "read_header_res = %d from %d", read_header_res, from);
 
         if (read_header_res > 0) {
             lg(receiver->localId, "receive", "s_payload_len = %d from %d", msg->s_header.s_payload_len, from);
 
             if (msg->s_header.s_payload_len > 0) {
                 int read_payload_res = read(fd, &msg->s_payload, msg->s_header.s_payload_len);
-                lg(receiver->localId, "receive", "read_payload_res = %d from %d", read_payload_res, from);
+
+                // print
+                if (read_payload_res > -1) {
+                    lg(receiver->localId, "receive", "read_payload_res = %d from %d", read_payload_res, from);
+                    lg_msg(receiver->localId, "receive", msg, from, receiver->localId);
+                }
             }
-            lg_msg(receiver->localId, "receive", msg, from, receiver->localId);
+            //lg_msg(receiver->localId, "receive", msg, from, receiver->localId);
             return 1;
         } else {
             sleep(1);

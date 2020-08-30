@@ -19,4 +19,6 @@ typedef struct {
 
 void doSecondRule(process * process_receiver, timestamp_t msg_time);
 
+void my_print_history(const AllHistory * history, timestamp_t max_processes_time);
+
 #endif //PA1_LAMPORT_H

@@ -401,7 +401,11 @@ int main(int argc, char *argv[]) {
 
     lg(0, "main", "Received history!");
 
-    print_history(&allHistory);
+    lg(0, "main", "last time = %d", array_of_processes[0].lamport_time);
+
+//    print_history(&allHistory);
+
+    my_print_history(&allHistory, array_of_processes[0].lamport_time);
 
     fclose(event_log);
 
